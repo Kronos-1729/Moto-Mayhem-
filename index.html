@@ -14,13 +14,15 @@ body{display:flex;align-items:center;justify-content:center;font-family:'Inter',
 
 #wrap{
   position:relative;
-  width:min(900px,100vw);
+  width:min(900px,100vw,177.78vh,177.78dvh);
   aspect-ratio:16/9;
   background:#000;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.08);
   border-radius:6px;
   box-shadow:0 25px 70px -15px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.03);
+  container-type:size;
+  container-name:gamewrap;
 }
 canvas{display:block;width:100%;height:100%;}
 
@@ -371,23 +373,23 @@ canvas{display:block;width:100%;height:100%;}
 .tb.pressed{transform:scale(.88) !important;filter:brightness(1.8);box-shadow:0 0 10px rgba(255,255,255,0.25);}
 
 /* Left cluster — steering D-pad */
-#tl {bottom:24px;left:16px; width:66px;height:66px;font-size:24px;
+#tl {bottom:4.74cqh;left:1.78cqw; width:13.04cqh;height:13.04cqh;font-size:4.74cqh;
      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);}
-#tr {bottom:24px;left:92px; width:66px;height:66px;font-size:24px;
+#tr {bottom:4.74cqh;left:10.22cqw; width:13.04cqh;height:13.04cqh;font-size:4.74cqh;
      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);}
-#tup{bottom:96px;left:54px; width:54px;height:54px;font-size:10px;font-weight:700;
+#tup{bottom:18.97cqh;left:6cqw; width:10.67cqh;height:10.67cqh;font-size:1.98cqh;font-weight:700;
      background:rgba(58,168,255,.1);border:1px solid rgba(58,168,255,.25);color:#5ec8ff;letter-spacing:.5px;}
 
 /* Right cluster */
-#tgas  {bottom:24px; right:16px; width:74px;height:74px;font-size:12px;font-weight:700;letter-spacing:1px;
+#tgas  {bottom:4.74cqh; right:1.78cqw; width:14.62cqh;height:14.62cqh;font-size:2.37cqh;font-weight:700;letter-spacing:1px;
         background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:#5eead4;}
-#tbrk  {bottom:108px;right:16px; width:56px;height:56px;font-size:10px;font-weight:700;
+#tbrk  {bottom:21.34cqh;right:1.78cqw; width:11.07cqh;height:11.07cqh;font-size:1.98cqh;font-weight:700;
         background:rgba(255,94,58,.12);border:1px solid rgba(255,94,58,.3);color:#ffab91;}
-#tpunch{bottom:24px; right:106px;width:64px;height:64px;font-size:11px;font-weight:700;
+#tpunch{bottom:4.74cqh; right:11.78cqw;width:12.65cqh;height:12.65cqh;font-size:2.17cqh;font-weight:700;
         background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.28);color:#fb7185;}
-#tkick {bottom:92px; right:98px; width:58px;height:58px;font-size:11px;font-weight:700;
+#tkick {bottom:18.18cqh; right:10.89cqw; width:11.46cqh;height:11.46cqh;font-size:2.17cqh;font-weight:700;
         background:rgba(255,138,92,.1);border:1px solid rgba(255,138,92,.28);color:#ff8a5c;}
-#tnitro{bottom:174px;right:16px; width:52px;height:52px;font-size:10px;font-weight:700;
+#tnitro{bottom:34.39cqh;right:1.78cqw; width:10.28cqh;height:10.28cqh;font-size:1.98cqh;font-weight:700;
         background:rgba(58,168,255,.12);border:1px solid rgba(58,168,255,.3);color:#5ec8ff;letter-spacing:.5px;}
 
 /* ── SCANLINES ── */
@@ -401,9 +403,32 @@ canvas{display:block;width:100%;height:100%;}
   position:absolute;inset:0;pointer-events:none;z-index:4;
   background:radial-gradient(ellipse at center,transparent 65%,rgba(0,0,0,.65) 100%);
 }
+
+/* ── ROTATE TO LANDSCAPE PROMPT ── */
+#rotate-prompt{
+  display:none;
+  position:fixed;inset:0;z-index:999;
+  background:#0a0b0e;color:#fff;
+  flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:10px;padding:24px;
+  font-family:'Rajdhani','Inter',sans-serif;
+}
+#rotate-prompt .icon{font-size:52px;animation:rotatehint 1.6s ease-in-out infinite;}
+#rotate-prompt .msg{font-size:20px;font-weight:700;letter-spacing:.5px;}
+#rotate-prompt .sub{font-size:13px;color:rgba(255,255,255,.55);max-width:280px;line-height:1.5;}
+@keyframes rotatehint{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
+@media (orientation:portrait){
+  #rotate-prompt{display:flex;}
+  #wrap{display:none;}
+}
 </style>
 </head>
 <body>
+<div id="rotate-prompt">
+  <div class="icon">📱</div>
+  <div class="msg">Rotate your device</div>
+  <div class="sub">Moto Mayhem is a landscape game — turn your phone sideways to play</div>
+</div>
 <div id="wrap">
   <canvas id="c" width="900" height="506"></canvas>
   <div id="sl"></div>
