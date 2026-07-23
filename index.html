@@ -21,8 +21,11 @@ body{display:flex;align-items:center;justify-content:center;font-family:'Inter',
   border:1px solid rgba(255,255,255,.08);
   border-radius:6px;
   box-shadow:0 25px 70px -15px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.03);
-  container-type:size;
-  container-name:gamewrap;
+}
+#stage{
+  position:absolute;top:0;left:0;
+  width:900px;height:506px;
+  transform-origin:top left;
 }
 canvas{display:block;width:100%;height:100%;}
 
@@ -373,23 +376,23 @@ canvas{display:block;width:100%;height:100%;}
 .tb.pressed{transform:scale(.88) !important;filter:brightness(1.8);box-shadow:0 0 10px rgba(255,255,255,0.25);}
 
 /* Left cluster — steering D-pad */
-#tl {bottom:4.74cqh;left:1.78cqw; width:13.04cqh;height:13.04cqh;font-size:4.74cqh;
+#tl {bottom:24px;left:16px; width:66px;height:66px;font-size:24px;
      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);}
-#tr {bottom:4.74cqh;left:10.22cqw; width:13.04cqh;height:13.04cqh;font-size:4.74cqh;
+#tr {bottom:24px;left:92px; width:66px;height:66px;font-size:24px;
      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);}
-#tup{bottom:18.97cqh;left:6cqw; width:10.67cqh;height:10.67cqh;font-size:1.98cqh;font-weight:700;
+#tup{bottom:96px;left:54px; width:54px;height:54px;font-size:10px;font-weight:700;
      background:rgba(58,168,255,.1);border:1px solid rgba(58,168,255,.25);color:#5ec8ff;letter-spacing:.5px;}
 
 /* Right cluster */
-#tgas  {bottom:4.74cqh; right:1.78cqw; width:14.62cqh;height:14.62cqh;font-size:2.37cqh;font-weight:700;letter-spacing:1px;
+#tgas  {bottom:24px; right:16px; width:74px;height:74px;font-size:12px;font-weight:700;letter-spacing:1px;
         background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:#5eead4;}
-#tbrk  {bottom:21.34cqh;right:1.78cqw; width:11.07cqh;height:11.07cqh;font-size:1.98cqh;font-weight:700;
+#tbrk  {bottom:108px;right:16px; width:56px;height:56px;font-size:10px;font-weight:700;
         background:rgba(255,94,58,.12);border:1px solid rgba(255,94,58,.3);color:#ffab91;}
-#tpunch{bottom:4.74cqh; right:11.78cqw;width:12.65cqh;height:12.65cqh;font-size:2.17cqh;font-weight:700;
+#tpunch{bottom:24px; right:106px;width:64px;height:64px;font-size:11px;font-weight:700;
         background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.28);color:#fb7185;}
-#tkick {bottom:18.18cqh; right:10.89cqw; width:11.46cqh;height:11.46cqh;font-size:2.17cqh;font-weight:700;
+#tkick {bottom:92px; right:98px; width:58px;height:58px;font-size:11px;font-weight:700;
         background:rgba(255,138,92,.1);border:1px solid rgba(255,138,92,.28);color:#ff8a5c;}
-#tnitro{bottom:34.39cqh;right:1.78cqw; width:10.28cqh;height:10.28cqh;font-size:1.98cqh;font-weight:700;
+#tnitro{bottom:174px;right:16px; width:52px;height:52px;font-size:10px;font-weight:700;
         background:rgba(58,168,255,.12);border:1px solid rgba(58,168,255,.3);color:#5ec8ff;letter-spacing:.5px;}
 
 /* ── SCANLINES ── */
@@ -430,6 +433,7 @@ canvas{display:block;width:100%;height:100%;}
   <div class="sub">Moto Mayhem is a landscape game — turn your phone sideways to play</div>
 </div>
 <div id="wrap">
+<div id="stage">
   <canvas id="c" width="900" height="506"></canvas>
   <div id="sl"></div>
   <div id="vig"></div>
@@ -734,6 +738,7 @@ canvas{display:block;width:100%;height:100%;}
     </div>
   </div>
 </div>
+</div>
 
 <script>
 'use strict';
@@ -831,6 +836,23 @@ function sfx(type) {
 const CV = document.getElementById('c');
 const cx = CV.getContext('2d');
 const W = 900, H = 506;
+
+// ════════════════════════════════════════════════════════════
+// STAGE SCALING — keeps the fixed 900×506 layout (HUD, menus,
+// touch controls) proportionally scaled to fit any screen size
+// ════════════════════════════════════════════════════════════
+const wrapEl = document.getElementById('wrap');
+const stageEl = document.getElementById('stage');
+function fitStage() {
+  const scale = wrapEl.clientWidth / W;
+  stageEl.style.transform = `scale(${scale})`;
+}
+fitStage();
+window.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', fitStage);
+if (window.ResizeObserver) {
+  new ResizeObserver(fitStage).observe(wrapEl);
+}
 
 // ════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -4589,7 +4611,7 @@ function dmgNum(x, y, text, col) {
   el.style.color = col;
   el.style.fontSize = text.includes('KO') ? '22px' : '16px';
   el.textContent = text;
-  wrap.appendChild(el);
+  stageEl.appendChild(el);
   setTimeout(() => el.remove(), 800);
 }
 
