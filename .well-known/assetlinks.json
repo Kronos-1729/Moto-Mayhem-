@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.kronos_1729.twa",
+        "sha256_cert_fingerprints": ["CD:44:A1:0B:92:61:DF:B1:BB:BD:35:F2:61:28:43:42:6B:D9:1F:F5:18:30:C9:0F:AC:93:D7:CE:C2:05:85:AA"]
+      }
+    }]
