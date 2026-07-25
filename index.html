@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Moto Mayhem</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0a0b0e;touch-action:none;}
@@ -134,7 +134,9 @@ canvas{display:block;width:100%;height:100%;}
 /* ── OVERLAYS ── */
 .ov{
   position:absolute;inset:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;
+  justify-content:safe center;
   text-align:center;padding:20px;z-index:40;
   overflow-y:auto;
   background:
@@ -143,18 +145,21 @@ canvas{display:block;width:100%;height:100%;}
   font-family:'Inter',-apple-system,'Segoe UI',sans-serif;
 }
 .ov h1{
-  font-family:'Rajdhani','Inter',sans-serif;
-  font-size:clamp(32px,8vw,60px);
-  font-weight:700;
-  color:#fff;letter-spacing:8px;
+  font-family:'Racing Sans One','Rajdhani','Inter',sans-serif;
+  font-size:clamp(34px,8.5vw,64px);
+  font-weight:400;
+  color:#fff;letter-spacing:4px;
   margin-bottom:0;line-height:1;
-  text-shadow:0 6px 24px rgba(0,0,0,.5);
+  text-shadow:
+    3px 3px 0 rgba(0,0,0,.65),
+    0 10px 28px rgba(0,0,0,.55);
 }
 .ov h1::after{
   content:'';display:block;
-  width:60px;height:3px;border-radius:2px;
-  margin:14px auto 18px;
+  width:70px;height:6px;
+  margin:16px auto 18px;
   background:#ff5e3a;
+  transform:skewX(-24deg);
 }
 #ov-title{
   font-size:clamp(20px,5.5vw,38px);
@@ -720,6 +725,16 @@ canvas{display:block;width:100%;height:100%;}
 
   </div>
 
+  <!-- Reset Profile Confirmation -->
+  <div class="ov" id="ov-confirm-reset" style="display:none">
+    <h1 style="font-size:clamp(24px,6vw,40px);">RESET PROGRESS?</h1>
+    <p class="sub">This will erase your credits, track records, and garage upgrades. This cannot be undone.</p>
+    <div class="btn-row">
+      <button class="btn secondary" id="btn-reset-cancel">CANCEL</button>
+      <button class="btn" id="btn-reset-confirm">RESET</button>
+    </div>
+  </div>
+
   <!-- Game Over Screen -->
   <div class="ov" id="ov-over" style="display:none">
     <h1 id="ov-title">RACE OVER</h1>
@@ -779,6 +794,19 @@ canvas{display:block;width:100%;height:100%;}
       <button class="btn" id="btn-champ-again">PLAY AGAIN</button>
       <button class="btn secondary" id="btn-champ-menu">MAIN MENU</button>
     </div>
+  </div>
+
+  <!-- Game Complete — shown after finishing the Elite Gauntlet championship -->
+  <div class="ov" id="ov-game-complete" style="display:none;background:
+      linear-gradient(160deg, rgba(30,10,6,.97) 0%, rgba(8,4,3,.99) 100%),
+      radial-gradient(ellipse at 50% 30%, rgba(255,94,58,.18) 0%, transparent 60%);">
+    <h1 style="font-size:clamp(30px,7.5vw,54px);">🏆 ROAD LEGEND</h1>
+    <p class="sub" style="max-width:460px;">Every gang broken. Every circuit conquered. Every mile of the Elite Gauntlet bled dry. There's no stretch of asphalt left that doesn't know your name.</p>
+    <div class="stats-row">
+      <div class="sb"><span class="sv" id="game-complete-cash" style="color:#fbbf24;"></span><span class="sl">Total Credits</span></div>
+      <div class="sb"><span class="sv" id="game-complete-tracks" style="color:#34d399;"></span><span class="sl">Tracks Won</span></div>
+    </div>
+    <button class="btn" id="btn-game-complete-continue" style="margin-top:6px;">CONTINUE</button>
   </div>
 </div>
 </div>
@@ -6111,9 +6139,9 @@ function availableUpgradeTier() {
 
 // Updates the small profile summary shown on the main menu.
 function updateProfileUI() {
-  const tracksComplete = Object.values(bestFinish).filter(v => v !== null).length;
+  const tracksComplete = Object.values(bestFinish).filter(v => v === 1).length;
   const statsEl = document.getElementById('profile-stats');
-  if (statsEl) statsEl.textContent = `${playerCash} CR  ·  ${tracksComplete}/9 TRACKS  ·  ${track2Unlocked ? outlawUnlocked ? gauntletUnlocked ? 'ALL SERIES' : 'OUTLAW UNLOCKED' : 'STREET COMPLETE' : 'NEW RIDER'}`;
+  if (statsEl) statsEl.textContent = `${playerCash} CR  ·  ${tracksComplete}/9 TRACKS`;
 }
 
 function refreshGarageUI() {
@@ -6402,12 +6430,38 @@ document.getElementById('btn-champ-again').addEventListener('touchend', e => {
 // MAIN MENU
 document.getElementById('btn-champ-menu').addEventListener('click', () => {
   document.getElementById('ov-championship').style.display = 'none';
-  showMenuScreen('menu-main');
-  document.getElementById('ov-start').style.display = 'flex';
+  if (championship.seriesIdx === 2) {
+    showGameCompleteScreen();
+  } else {
+    showMenuScreen('menu-main');
+    document.getElementById('ov-start').style.display = 'flex';
+  }
 });
 document.getElementById('btn-champ-menu').addEventListener('touchend', e => {
   e.preventDefault();
   document.getElementById('ov-championship').style.display = 'none';
+  if (championship.seriesIdx === 2) {
+    showGameCompleteScreen();
+  } else {
+    showMenuScreen('menu-main');
+    document.getElementById('ov-start').style.display = 'flex';
+  }
+});
+
+function showGameCompleteScreen() {
+  const tracksWon = Object.values(bestFinish).filter(v => v === 1).length;
+  document.getElementById('game-complete-cash').textContent = playerCash + ' CR';
+  document.getElementById('game-complete-tracks').textContent = tracksWon + '/9';
+  document.getElementById('ov-game-complete').style.display = 'flex';
+}
+document.getElementById('btn-game-complete-continue').addEventListener('click', () => {
+  document.getElementById('ov-game-complete').style.display = 'none';
+  showMenuScreen('menu-main');
+  document.getElementById('ov-start').style.display = 'flex';
+});
+document.getElementById('btn-game-complete-continue').addEventListener('touchend', e => {
+  e.preventDefault();
+  document.getElementById('ov-game-complete').style.display = 'none';
   showMenuScreen('menu-main');
   document.getElementById('ov-start').style.display = 'flex';
 });
@@ -6463,11 +6517,18 @@ updateTrackUI();
 })();
 
 document.getElementById('btn-reset-profile').addEventListener('click', () => {
-  if (confirm('Reset all progress? This cannot be undone.')) resetProfile();
+  document.getElementById('ov-confirm-reset').style.display = 'flex';
 });
 document.getElementById('btn-reset-profile').addEventListener('touchend', e => {
   e.preventDefault();
-  if (confirm('Reset all progress? This cannot be undone.')) resetProfile();
+  document.getElementById('ov-confirm-reset').style.display = 'flex';
+});
+document.getElementById('btn-reset-cancel').addEventListener('click', () => {
+  document.getElementById('ov-confirm-reset').style.display = 'none';
+});
+document.getElementById('btn-reset-confirm').addEventListener('click', () => {
+  document.getElementById('ov-confirm-reset').style.display = 'none';
+  resetProfile();
 });
 
 loadProfile();
