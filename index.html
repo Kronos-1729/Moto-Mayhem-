@@ -275,6 +275,27 @@ canvas{display:block;width:100%;height:100%;}
   font-family:'Rajdhani','Inter',sans-serif;margin-bottom:18px;
 }
 
+/* ── CHAMPIONSHIP INTRO ── */
+.champ-intro-rules{
+  display:flex;flex-direction:column;gap:8px;
+  margin:4px 0 20px;max-width:460px;width:100%;
+}
+.cir-row{
+  display:flex;align-items:center;gap:10px;text-align:left;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;padding:9px 14px;
+  color:#c4c9d2;font-size:11px;line-height:1.4;
+  font-family:'Rajdhani','Inter',sans-serif;font-weight:600;letter-spacing:.3px;
+}
+.cir-ico{font-size:16px;flex-shrink:0;}
+.champ-intro-check{
+  display:flex;align-items:center;gap:8px;
+  color:#6b7280;font-size:11px;letter-spacing:.5px;
+  font-family:'Rajdhani','Inter',sans-serif;font-weight:600;
+  margin-bottom:20px;cursor:pointer;user-select:none;
+}
+.champ-intro-check input{width:15px;height:15px;cursor:pointer;accent-color:#ff5e3a;}
+
 /* ── TRACK SELECT ── */
 .track-select{
   display:none;gap:12px;flex-direction:column;align-items:center;
@@ -531,7 +552,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="series-meta">3 tracks</div>
             <div class="series-best" id="series-best-0"></div>
           </div>
-          <button class="btn-champ" id="btn-champ-0">⚑ CHAMPIONSHIP</button>
+          <button class="btn-champ" id="btn-champ-0" disabled>⚑ CHAMPIONSHIP</button>
         </div>
         <div class="series-col">
           <div class="series-card locked" id="series-card-1">
@@ -723,6 +744,25 @@ canvas{display:block;width:100%;height:100%;}
       <button class="btn secondary" id="btn-track-select">TRACK SELECT</button>
       <button class="btn" id="btn-champ-next" style="display:none;">NEXT RACE →</button>
       <button class="btn" id="btn-champ-results" style="display:none;">SEE RESULTS</button>
+    </div>
+  </div>
+
+  <!-- Championship Intro Screen -->
+  <div class="ov" id="ov-champ-intro" style="display:none">
+    <div class="champ-series-title" id="champ-intro-label"></div>
+    <h1>CHAMPIONSHIP</h1>
+    <p class="sub" id="champ-intro-text"></p>
+    <div class="champ-intro-rules" id="champ-intro-rules">
+      <div class="cir-row"><span class="cir-ico">🏁</span> 3 races back to back — same series, full gauntlet</div>
+      <div class="cir-row"><span class="cir-ico">🏆</span> Points per race: placement + KOs + a bonus for finishing strong</div>
+      <div class="cir-row"><span class="cir-ico">💀</span> Wreck or DNF and that's the run — no restarts, no mulligans</div>
+    </div>
+    <label class="champ-intro-check">
+      <input type="checkbox" id="champ-intro-dontshow"> Don't show this again for this series
+    </label>
+    <div class="btn-row">
+      <button class="btn" id="btn-champ-intro-start">START CHAMPIONSHIP</button>
+      <button class="btn secondary" id="btn-champ-intro-back">◀ BACK</button>
     </div>
   </div>
 
@@ -1413,6 +1453,10 @@ let selectedTrack = 0;
 let track2Unlocked = false; // Coastal Run + Mountain Pass — both unlock together
 let outlawUnlocked = false; // Outlaw Circuit (Desert Highway, City Streets, Docks at Night)
 let gauntletUnlocked = false; // Elite Gauntlet (Volcano Run, Arctic Pass, Strip Mile)
+// Per-series "don't show again" flag for the championship intro screen —
+// kept separate per series so dismissing it for Street Series doesn't
+// silence the Outlaw Circuit or Elite Gauntlet intros.
+const championshipIntroSeen = { 0: false, 1: false, 2: false };
 let currentSeries = 0; // which series' track list is shown on Screen 3 (0 = Street, 1 = Outlaw)
 
 // Garage / economy state (persists across races within this session)
@@ -1440,6 +1484,7 @@ function saveProfile() {
     outlawUnlocked,
     gauntletUnlocked,
     seriesCompletionAwarded: { ...seriesCompletionAwarded },
+    championshipIntroSeen: { ...championshipIntroSeen },
   };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(profile)); } catch(e) {}
 }
@@ -1457,6 +1502,7 @@ function loadProfile() {
     if (typeof p.outlawUnlocked === 'boolean') outlawUnlocked = p.outlawUnlocked;
     if (typeof p.gauntletUnlocked === 'boolean') gauntletUnlocked = p.gauntletUnlocked;
     if (p.seriesCompletionAwarded) Object.assign(seriesCompletionAwarded, p.seriesCompletionAwarded);
+    if (p.championshipIntroSeen) Object.assign(championshipIntroSeen, p.championshipIntroSeen);
     updateProfileUI();
   } catch(e) {}
 }
@@ -1471,6 +1517,7 @@ function resetProfile() {
   outlawUnlocked = false;
   gauntletUnlocked = false;
   Object.assign(seriesCompletionAwarded, { 0:false, 1:false, 2:false });
+  Object.assign(championshipIntroSeen, { 0:false, 1:false, 2:false });
   updateTrackUI();
   refreshGarageUI();
   updateProfileUI();
@@ -4544,11 +4591,12 @@ function drawTraffic() {
 function drawRivals() {
   const sorted = [...G.rivals].sort((a,b) => b.relZ - a.relZ);
   for (const r of sorted) {
-    if (r.ko && r.koTimer <= 0) continue;
-    // relZ > 1 means the rider has dropped more than VIEW_BEHIND meters
-    // behind the player — they've been overtaken and are out of view
-    // (no rear-view rendering), so skip drawing them entirely.
-    if (!r.ko && r.relZ > 1) continue;
+    // A KO'd rider's wrecked bike sits at a fixed world position (their
+    // distance stops advancing while down) — once the player has pulled
+    // far enough past that spot, drop it from view just like any other
+    // rider that's been overtaken, instead of leaving it rendered forever
+    // until the respawn timer runs out.
+    if (r.relZ > 1) continue;
     // Sandstorm visibility culling: rivals far ahead vanish into the storm
     if (G.theme === 'desert' && G.sandstormAlpha > 0.3 && r.relZ < 0.55) continue;
     const z = Math.max(0.04, Math.min(0.96, 1 - r.relZ));
@@ -5648,14 +5696,14 @@ function endGame(win) {
   const fieldSize = G.rivals.length + 1;
   const place = win ? G.rivals.filter(r => r.distance > G.distance).length + 1 : null;
 
-  // Grade
+  // Grade — based on KO count for the race
   let grade = 'F', gradeCol = '#ff2200';
   if (win) {
-    if (ko >= 10 && spd > 100) { grade='S+'; gradeCol='#ffdd00'; }
-    else if (ko >= 7)           { grade='S';  gradeCol='#ffdd00'; }
-    else if (ko >= 5)           { grade='A';  gradeCol='#00ff88'; }
-    else if (ko >= 3)           { grade='B';  gradeCol='#00ccff'; }
-    else                        { grade='C';  gradeCol='#aaaaaa'; }
+    if (ko >= 8)      { grade='S+'; gradeCol='#ffdd00'; }
+    else if (ko >= 6) { grade='S';  gradeCol='#ffdd00'; }
+    else if (ko >= 4) { grade='A';  gradeCol='#00ff88'; }
+    else if (ko >= 1) { grade='B';  gradeCol='#00ccff'; }
+    else              { grade='C';  gradeCol='#aaaaaa'; }
   }
 
   const ordinal = n => {
@@ -5679,9 +5727,9 @@ function endGame(win) {
   const cashBreakdown = calcRaceCash(win, place, G.player.ko, G.player.hp / G.player.maxHp, G.trackIdx);
   playerCash += cashBreakdown.total;
 
-  // track2Unlocked: finish Night Highway without DNF
+  // track2Unlocked: finish 1st or 2nd on Night Highway
   let justUnlocked = false;
-  if (win && G.trackIdx === 0 && !track2Unlocked) {
+  if (win && G.trackIdx === 0 && place <= 2 && !track2Unlocked) {
     track2Unlocked = true;
     justUnlocked = true;
   }
@@ -5733,10 +5781,13 @@ function endGame(win) {
     const racePts = championship.points[championship.raceIdx];
     ptEl.textContent = `RACE ${championship.raceIdx + 1}/3 — +${racePts} PTS  |  TOTAL: ${championship.totalPoints} PTS`;
 
-    // Hide standard buttons, show championship buttons
+    // Hide standard buttons, show championship buttons.
+    // A DNF/roadkill ends the championship early — the remaining races are
+    // simply never played and stay at their initial 0 points — so it's
+    // treated the same as reaching the last race: go straight to results.
     document.getElementById('btn-restart').style.display     = 'none';
     document.getElementById('btn-track-select').style.display = 'none';
-    const isLastRace = championship.raceIdx === 2;
+    const isLastRace = championship.raceIdx === 2 || !win;
     document.getElementById('btn-champ-next').style.display    = isLastRace ? 'none' : '';
     document.getElementById('btn-champ-results').style.display = isLastRace ? '' : 'none';
   } else {
@@ -5855,6 +5906,15 @@ let championship = {
   totalPoints: 0
 };
 
+// Flavor text for each series' championship intro screen — same voice as
+// TRACK_DESCRIPTIONS, but pitched as the promoter/announcer hyping up the
+// gauntlet the player's about to enter.
+const CHAMPIONSHIP_INTRO_TEXT = {
+  0: "Three tracks, one championship, no second chances. The Street Series Championship is where every rider on the scene starts — Night Highway, Coastal Run, Mountain Pass, back to back. Crash out on any leg and the run ends there. Prove you belong and the Outlaw Circuit starts paying attention.",
+  1: "Forget the street rules. Out here it's the Desert Highway, City Streets, and Docks at Night — sandstorms, gridlock, and dockside ambushes, three legs deep with rivals who hit harder than anything you've faced. The Outlaw Circuit Championship doesn't care how good your last run was. One wipeout and you're done for the night.",
+  2: "This is the top of the food chain. Volcano Run, Arctic Pass, Strip Mile — narrower roads, faster packs, and every hazard in the game stacked back to back. The Elite Gauntlet Championship is the closest thing this world has to a proving ground, and it does not forgive mistakes. Finish all three or don't bother calling it a run.",
+};
+
 // Calculates championship points earned for a single race.
 function calcChampionshipPoints(win, place, koCount, hpPct) {
   if (!win) return 0;
@@ -5872,9 +5932,40 @@ function calcChampionshipPoints(win, place, koCount, hpPct) {
   return points;
 }
 
-// Starts a championship run for the given series, jumping straight into
-// the first race of that series.
+// Entry point from the series card's CHAMPIONSHIP button. Shows the
+// series' intro/explainer screen first, unless the player has already
+// dismissed it (per-series "don't show again"), in which case it jumps
+// straight to beginActualChampionship.
 function startChampionship(seriesIdx) {
+  // Guard against the championship starting for a series that isn't
+  // unlocked yet — the disabled attribute on the button doesn't reliably
+  // suppress touch input, so this check has to live here too.
+  const seriesUnlocked = seriesIdx === 0 ? track2Unlocked
+                        : seriesIdx === 1 ? outlawUnlocked
+                        : gauntletUnlocked;
+  if (!seriesUnlocked) return;
+
+  if (championshipIntroSeen[seriesIdx]) {
+    beginActualChampionship(seriesIdx);
+  } else {
+    showChampionshipIntro(seriesIdx);
+  }
+}
+
+// Populates and shows the championship intro/explainer screen for the
+// given series.
+function showChampionshipIntro(seriesIdx) {
+  const seriesNames = ['🌃 STREET SERIES', '🏜️ OUTLAW CIRCUIT', '☠️ ELITE GAUNTLET'];
+  document.getElementById('champ-intro-label').textContent = seriesNames[seriesIdx];
+  document.getElementById('champ-intro-text').textContent = CHAMPIONSHIP_INTRO_TEXT[seriesIdx];
+  document.getElementById('champ-intro-dontshow').checked = false;
+  document.getElementById('ov-champ-intro').dataset.seriesIdx = seriesIdx;
+  document.getElementById('ov-champ-intro').style.display = 'flex';
+}
+
+// Actually kicks off the championship run for the given series, jumping
+// straight into the first race.
+function beginActualChampionship(seriesIdx) {
   championship = { active: true, seriesIdx, raceIdx: 0, points: [0,0,0], totalPoints: 0 };
   const firstTrack = seriesIdx * 3;
   selectTrack(firstTrack);
@@ -5961,6 +6052,7 @@ function showChampionshipResults() {
 
   updateTrackUI();
   updateProfileUI();
+  saveProfile();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -6141,6 +6233,8 @@ function updateTrackUI() {
   const seriesBest0 = document.getElementById('series-best-0');
   const finishes0 = [bestFinish[0], bestFinish[1], bestFinish[2]].filter(f => f !== null);
   if (seriesBest0) seriesBest0.textContent = finishes0.length ? finishes0.length + '/3 raced' : '';
+  const btnChamp0 = document.getElementById('btn-champ-0');
+  if (btnChamp0) btnChamp0.disabled = !track2Unlocked;
 
   // Outlaw Circuit series card unlock state + best
   const seriesCard1 = document.getElementById('series-card-1');
@@ -6234,12 +6328,12 @@ document.getElementById('series-card-2').addEventListener('touchend', e => {
 });
 
 // Series select → Start Championship (jumps straight into the first race of the series)
-document.getElementById('btn-champ-0').addEventListener('click', e => { e.stopPropagation(); startChampionship(0); });
-document.getElementById('btn-champ-0').addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); startChampionship(0); });
-document.getElementById('btn-champ-1').addEventListener('click', e => { e.stopPropagation(); startChampionship(1); });
-document.getElementById('btn-champ-1').addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); startChampionship(1); });
-document.getElementById('btn-champ-2').addEventListener('click', e => { e.stopPropagation(); startChampionship(2); });
-document.getElementById('btn-champ-2').addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); startChampionship(2); });
+document.getElementById('btn-champ-0').addEventListener('click', e => { e.stopPropagation(); if (e.currentTarget.disabled) return; startChampionship(0); });
+document.getElementById('btn-champ-0').addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); if (e.currentTarget.disabled) return; startChampionship(0); });
+document.getElementById('btn-champ-1').addEventListener('click', e => { e.stopPropagation(); if (e.currentTarget.disabled) return; startChampionship(1); });
+document.getElementById('btn-champ-1').addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); if (e.currentTarget.disabled) return; startChampionship(1); });
+document.getElementById('btn-champ-2').addEventListener('click', e => { e.stopPropagation(); if (e.currentTarget.disabled) return; startChampionship(2); });
+document.getElementById('btn-champ-2').addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); if (e.currentTarget.disabled) return; startChampionship(2); });
 
 // Back buttons
 document.getElementById('btn-back-main').addEventListener('click', () => showMenuScreen('menu-main'));
@@ -6317,6 +6411,26 @@ document.getElementById('btn-champ-menu').addEventListener('touchend', e => {
   showMenuScreen('menu-main');
   document.getElementById('ov-start').style.display = 'flex';
 });
+
+// Championship intro screen — START/BACK. Reads the series index that was
+// stashed on the overlay's dataset when it was shown.
+function confirmChampionshipIntro() {
+  const seriesIdx = parseInt(document.getElementById('ov-champ-intro').dataset.seriesIdx, 10);
+  if (document.getElementById('champ-intro-dontshow').checked) {
+    championshipIntroSeen[seriesIdx] = true;
+    saveProfile();
+  }
+  document.getElementById('ov-champ-intro').style.display = 'none';
+  beginActualChampionship(seriesIdx);
+}
+function backFromChampionshipIntro() {
+  document.getElementById('ov-champ-intro').style.display = 'none';
+  showMenuScreen('menu-series');
+}
+document.getElementById('btn-champ-intro-start').addEventListener('click', confirmChampionshipIntro);
+document.getElementById('btn-champ-intro-start').addEventListener('touchend', e => { e.preventDefault(); confirmChampionshipIntro(); });
+document.getElementById('btn-champ-intro-back').addEventListener('click', backFromChampionshipIntro);
+document.getElementById('btn-champ-intro-back').addEventListener('touchend', e => { e.preventDefault(); backFromChampionshipIntro(); });
 
 updateTrackUI();
 
