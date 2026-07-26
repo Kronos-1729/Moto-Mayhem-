@@ -334,6 +334,30 @@ canvas{display:block;width:100%;height:100%;}
 .track-play:active{transform:scale(.9);background:rgba(255,94,58,.32);}
 .track-card.locked .track-play{display:none;}
 
+/* Profile select screen */
+.profile-slot-card{
+  width:100%;padding:14px 16px;border-radius:10px;cursor:pointer;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;gap:14px;
+  transition:transform .1s,border-color .15s,background .15s;
+  text-align:left;
+}
+.profile-slot-card:active{transform:scale(.98);}
+.profile-slot-card.filled:hover,.profile-slot-card.filled:active{border-color:#ff5e3a;}
+.profile-slot-card .profile-slot-icon{font-size:24px;flex-shrink:0;}
+.profile-slot-card .profile-slot-info{flex:1;min-width:0;}
+.profile-slot-card .profile-slot-name{color:#fff;font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:3px;font-family:'Rajdhani','Inter',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.profile-slot-card .profile-slot-meta{color:#6b7280;font-size:9px;letter-spacing:.5px;}
+.profile-slot-card.empty .profile-slot-name{color:#6b7280;font-style:italic;font-weight:600;}
+.profile-slot-delete{
+  flex-shrink:0;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  color:#9ca3af;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s,color .15s,transform .1s;
+}
+.profile-slot-delete:active{transform:scale(.9);background:rgba(255,42,42,.25);color:#ff5252;}
+
 /* ── BACK BUTTON ── */
 .btn-back{
   background:none;border:none;color:#6b7280;
@@ -605,8 +629,12 @@ canvas{display:block;width:100%;height:100%;}
       <button class="btn secondary" id="btn-garage-open" style="margin-top:12px;">GARAGE</button>
       <button class="btn secondary" id="btn-settings-open" style="margin-top:12px;">SETTINGS</button>
       <div id="profile-bar" style="margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;max-width:320px;">
+        <div id="profile-name-display" style="color:#ff5e3a;font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Rajdhani','Inter',sans-serif;"></div>
         <div id="profile-stats" style="color:#6b7280;font-size:9px;letter-spacing:1px;font-family:'Rajdhani','Inter',sans-serif;"></div>
-        <button id="btn-reset-profile" style="background:none;border:none;color:#374151;font-family:'Rajdhani','Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;padding:4px 8px;">↺ RESET PROFILE</button>
+        <div style="display:flex;gap:14px;">
+          <button id="btn-switch-profile" style="background:none;border:none;color:#374151;font-family:'Rajdhani','Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;padding:4px 8px;">👤 SWITCH RIDER</button>
+          <button id="btn-reset-profile" style="background:none;border:none;color:#374151;font-family:'Rajdhani','Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;padding:4px 8px;">↺ RESET PROFILE</button>
+        </div>
       </div>
     </div>
 
@@ -826,6 +854,37 @@ canvas{display:block;width:100%;height:100%;}
       </div>
     </div>
 
+  </div>
+
+  <!-- Profile Select -->
+  <div class="ov" id="ov-profile-select" style="display:none">
+    <h1 style="font-size:clamp(24px,6vw,40px);">SELECT RIDER</h1>
+    <p class="sub" style="margin-bottom:18px;">Choose a saved profile, or start a new one.</p>
+    <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;" id="profile-slot-list"></div>
+  </div>
+
+  <!-- Rename / New Profile Prompt -->
+  <div class="ov" id="ov-profile-name" style="display:none">
+    <h1 style="font-size:clamp(24px,6vw,36px);" id="profile-name-title">NAME YOUR RIDER</h1>
+    <input type="text" id="profile-name-input" maxlength="16" placeholder="RIDER NAME"
+      style="width:100%;max-width:300px;padding:12px 16px;margin:14px 0 22px;
+      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.2);border-radius:8px;
+      color:#fff;font-size:15px;font-weight:700;letter-spacing:1px;text-align:center;
+      font-family:'Rajdhani','Inter',sans-serif;text-transform:uppercase;">
+    <div class="btn-row">
+      <button class="btn secondary" id="btn-profile-name-cancel">CANCEL</button>
+      <button class="btn" id="btn-profile-name-confirm">CONFIRM</button>
+    </div>
+  </div>
+
+  <!-- Delete Profile Confirmation -->
+  <div class="ov" id="ov-profile-delete" style="display:none">
+    <h1 style="font-size:clamp(24px,6vw,40px);">DELETE RIDER?</h1>
+    <p class="sub" id="profile-delete-warning">This will permanently erase this profile's progress. This cannot be undone.</p>
+    <div class="btn-row">
+      <button class="btn secondary" id="btn-profile-delete-cancel">CANCEL</button>
+      <button class="btn" id="btn-profile-delete-confirm">DELETE</button>
+    </div>
   </div>
 
   <!-- Reset Profile Confirmation -->
@@ -1863,7 +1922,37 @@ const UPGRADE_COSTS = {
 };
 
 // ── PERSISTENT PLAYER PROFILE (localStorage) ──────────────────
-const SAVE_KEY = 'motoMayhem_v1';
+const SAVE_KEY_PREFIX = 'motoMayhem_v1_slot';
+const SLOT_META_KEY = 'motoMayhem_v1_slotMeta';
+const ACTIVE_SLOT_KEY = 'motoMayhem_v1_activeSlot';
+const MAX_SLOTS = 3;
+
+// Currently active profile slot (0, 1, or 2). Set by chooseProfileSlot()
+// before any game state loads.
+let activeSlot = 0;
+
+// Lightweight per-slot metadata (name + last-played timestamp), stored
+// separately from the full save so the profile-select screen can render
+// slot previews without deserializing every slot's entire save blob.
+function loadSlotMeta() {
+  try {
+    const raw = localStorage.getItem(SLOT_META_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function saveSlotMeta(meta) {
+  try { localStorage.setItem(SLOT_META_KEY, JSON.stringify(meta)); } catch(e) {}
+}
+function touchSlotMeta(slot, name) {
+  const meta = loadSlotMeta();
+  meta[slot] = { name: name !== undefined ? name : (meta[slot] ? meta[slot].name : `RIDER ${slot + 1}`), lastPlayed: Date.now() };
+  saveSlotMeta(meta);
+}
+function deleteSlotMeta(slot) {
+  const meta = loadSlotMeta();
+  delete meta[slot];
+  saveSlotMeta(meta);
+}
 
 function saveProfile() {
   const profile = {
@@ -1879,12 +1968,13 @@ function saveProfile() {
     settings: { ...settings },
     controlLayout: JSON.parse(JSON.stringify(controlLayout)),
   };
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(profile)); } catch(e) {}
+  try { localStorage.setItem(SAVE_KEY_PREFIX + activeSlot, JSON.stringify(profile)); } catch(e) {}
+  touchSlotMeta(activeSlot);
 }
 
 function loadProfile() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(SAVE_KEY_PREFIX + activeSlot);
     if (!raw) return;
     const p = JSON.parse(raw);
     if (typeof p.playerCash === 'number') playerCash = p.playerCash;
@@ -1906,7 +1996,7 @@ function loadProfile() {
 }
 
 function resetProfile() {
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  try { localStorage.removeItem(SAVE_KEY_PREFIX + activeSlot); } catch(e) {}
   playerCash = 0;
   Object.assign(playerUpgrades, { engine:0, armor:0, nitro:0, handling:0 });
   Object.keys(bestFinish).forEach(k => { bestFinish[k] = null; });
@@ -1918,10 +2008,232 @@ function resetProfile() {
   Object.assign(championshipIntroSeen, { 0:false, 1:false, 2:false });
   settings.masterVolume = 1.0;
   resetControlLayout();
+  touchSlotMeta(activeSlot);
   updateTrackUI();
   refreshGarageUI();
   updateProfileUI();
 }
+
+// Resets every piece of in-memory profile state to its blank-slate default
+// — used when switching profiles, so nothing from the previously active
+// slot can leak into the newly loaded one. Deliberately does NOT touch
+// localStorage; that's what resetProfile() is for.
+function clearInMemoryProfileState() {
+  playerCash = 0;
+  Object.assign(playerUpgrades, { engine:0, armor:0, nitro:0, handling:0 });
+  Object.keys(bestFinish).forEach(k => { bestFinish[k] = null; });
+  Object.keys(bestChampionshipScore).forEach(k => { bestChampionshipScore[k] = null; });
+  track2Unlocked = false;
+  outlawUnlocked = false;
+  gauntletUnlocked = false;
+  Object.assign(seriesCompletionAwarded, { 0:false, 1:false, 2:false });
+  Object.assign(championshipIntroSeen, { 0:false, 1:false, 2:false });
+  settings.masterVolume = 1.0;
+  for (const id of Object.keys(controlLayout)) delete controlLayout[id];
+}
+
+// Switches to the given slot: wipes in-memory state, points activeSlot at
+// the new slot, loads whatever save exists there (a brand-new slot simply
+// loads nothing and stays at defaults), and refreshes every screen that
+// displays profile-derived data.
+function switchToProfileSlot(slot) {
+  activeSlot = slot;
+  try { localStorage.setItem(ACTIVE_SLOT_KEY, String(slot)); } catch(e) {}
+  clearInMemoryProfileState();
+  loadProfile();
+  applyControlLayout();
+  updateTrackUI();
+  refreshGarageUI();
+  updateProfileUI();
+}
+
+// Permanently deletes a slot's save data and metadata. If the deleted slot
+// was the active one, the caller is responsible for switching to another
+// slot or re-opening the profile-select screen afterward.
+function deleteProfileSlot(slot) {
+  try { localStorage.removeItem(SAVE_KEY_PREFIX + slot); } catch(e) {}
+  deleteSlotMeta(slot);
+}
+
+// ════════════════════════════════════════════════════════════
+// PROFILE SELECT SCREEN
+// ════════════════════════════════════════════════════════════
+// Reads a slot's saved cash/upgrade summary directly from localStorage
+// without touching any live in-memory state — used purely for rendering
+// the preview line on an unselected slot's card.
+function peekSlotSummary(slot) {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY_PREFIX + slot);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    const tracksComplete = p.bestFinish ? Object.values(p.bestFinish).filter(v => v === 1).length : 0;
+    return { cash: p.playerCash || 0, tracksComplete };
+  } catch(e) { return null; }
+}
+
+// Renders all MAX_SLOTS profile cards into #profile-slot-list.
+function renderProfileSlots() {
+  const meta = loadSlotMeta();
+  const listEl = document.getElementById('profile-slot-list');
+  listEl.innerHTML = '';
+
+  for (let slot = 0; slot < MAX_SLOTS; slot++) {
+    const info = meta[slot];
+    const card = document.createElement('div');
+    card.className = 'profile-slot-card' + (info ? ' filled' : ' empty');
+
+    const icon = document.createElement('div');
+    icon.className = 'profile-slot-icon';
+    icon.textContent = info ? '🏍️' : '➕';
+    card.appendChild(icon);
+
+    const infoEl = document.createElement('div');
+    infoEl.className = 'profile-slot-info';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'profile-slot-name';
+    const metaEl = document.createElement('div');
+    metaEl.className = 'profile-slot-meta';
+    if (info) {
+      nameEl.textContent = info.name;
+      const summary = peekSlotSummary(slot);
+      metaEl.textContent = summary ? `${summary.cash} CR · ${summary.tracksComplete}/9 tracks` : '';
+    } else {
+      nameEl.textContent = 'NEW RIDER';
+      metaEl.textContent = 'Empty slot';
+    }
+    infoEl.appendChild(nameEl);
+    infoEl.appendChild(metaEl);
+    card.appendChild(infoEl);
+
+    card.addEventListener('click', () => selectProfileSlotFromScreen(slot, !info));
+    card.addEventListener('touchend', e => { e.preventDefault(); selectProfileSlotFromScreen(slot, !info); });
+
+    if (info) {
+      const delBtn = document.createElement('div');
+      delBtn.className = 'profile-slot-delete';
+      delBtn.textContent = '✕';
+      delBtn.addEventListener('click', e => { e.stopPropagation(); promptDeleteProfileSlot(slot, info.name); });
+      delBtn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); promptDeleteProfileSlot(slot, info.name); });
+      card.appendChild(delBtn);
+    }
+
+    listEl.appendChild(card);
+  }
+}
+
+function showProfileSelectScreen() {
+  renderProfileSlots();
+  document.getElementById('ov-profile-select').style.display = 'flex';
+}
+
+// Slot chosen from the select screen. A filled slot switches straight in;
+// an empty slot prompts for a rider name first.
+let pendingNewSlot = null;
+let forcedFirstProfile = false; // true when there's no way to cancel out (0 profiles exist)
+
+function selectProfileSlotFromScreen(slot, isNew) {
+  if (isNew) {
+    pendingNewSlot = slot;
+    forcedFirstProfile = false;
+    document.getElementById('profile-name-title').textContent = 'NAME YOUR RIDER';
+    document.getElementById('profile-name-input').value = '';
+    document.getElementById('btn-profile-name-cancel').style.display = '';
+    document.getElementById('ov-profile-name').style.display = 'flex';
+  } else {
+    switchToProfileSlot(slot);
+    document.getElementById('ov-profile-select').style.display = 'none';
+    document.getElementById('ov-start').style.display = 'flex';
+  }
+}
+
+// Shown when no profiles exist at all — on first-ever load, or after
+// deleting the only remaining profile. There's nothing to cancel back to,
+// so the Cancel button is hidden and a blank name simply falls back to a
+// default ("RIDER 1") rather than blocking the player.
+function showForcedFirstProfilePrompt() {
+  pendingNewSlot = 0;
+  forcedFirstProfile = true;
+  document.getElementById('profile-name-title').textContent = 'NAME YOUR RIDER';
+  document.getElementById('profile-name-input').value = '';
+  document.getElementById('btn-profile-name-cancel').style.display = 'none';
+  document.getElementById('ov-profile-select').style.display = 'none';
+  document.getElementById('ov-start').style.display = 'none';
+  document.getElementById('ov-profile-name').style.display = 'flex';
+}
+
+function confirmProfileName() {
+  const input = document.getElementById('profile-name-input');
+  const name = input.value.trim().toUpperCase() || `RIDER ${pendingNewSlot + 1}`;
+  touchSlotMeta(pendingNewSlot, name);
+  switchToProfileSlot(pendingNewSlot);
+  saveProfile();
+  document.getElementById('ov-profile-name').style.display = 'none';
+  document.getElementById('ov-profile-select').style.display = 'none';
+  document.getElementById('ov-start').style.display = 'flex';
+  pendingNewSlot = null;
+  forcedFirstProfile = false;
+}
+
+let pendingDeleteSlot = null;
+function promptDeleteProfileSlot(slot, name) {
+  pendingDeleteSlot = slot;
+  document.getElementById('profile-delete-warning').textContent =
+    `This will permanently erase "${name}"'s progress. This cannot be undone.`;
+  document.getElementById('ov-profile-delete').style.display = 'flex';
+}
+
+function confirmDeleteProfileSlot() {
+  const slot = pendingDeleteSlot;
+  document.getElementById('ov-profile-delete').style.display = 'none';
+  if (slot === null) return;
+  deleteProfileSlot(slot);
+  // If the deleted slot was the currently active one, fall back to
+  // in-memory defaults so nothing stale lingers in this session.
+  if (slot === activeSlot) clearInMemoryProfileState();
+
+  const meta = loadSlotMeta();
+  const remaining = Object.keys(meta).filter(k => meta[k]);
+  if (remaining.length === 0) {
+    // No profiles left at all — same situation as a fresh install, so the
+    // player must name a new rider before they can do anything else.
+    document.getElementById('ov-profile-select').style.display = 'none';
+    showForcedFirstProfilePrompt();
+  } else {
+    renderProfileSlots();
+  }
+}
+
+// Called once at page load. If 2+ profiles exist, gate the whole game
+// behind the profile-select screen. Otherwise just load whichever single
+// profile exists (or start fresh on slot 0) and proceed straight in.
+function initProfileSystem() {
+  const meta = loadSlotMeta();
+  const existingSlots = Object.keys(meta).filter(k => meta[k]).map(Number);
+
+  if (existingSlots.length === 0) {
+    showForcedFirstProfilePrompt();
+    return;
+  }
+
+  if (existingSlots.length >= 2) {
+    document.getElementById('ov-start').style.display = 'none';
+    showProfileSelectScreen();
+    return;
+  }
+
+  // Exactly 1 profile exists — just resume straight in.
+  let slot = existingSlots[0];
+  try {
+    const saved = localStorage.getItem(ACTIVE_SLOT_KEY);
+    if (saved !== null && meta[saved]) slot = parseInt(saved, 10);
+  } catch(e) {}
+  activeSlot = slot;
+  loadProfile();
+  applyControlLayout();
+  updateTrackUI();
+  refreshGarageUI();
+}
+
 
 function initGame(trackIdx) {
   particles = [];
@@ -6574,6 +6886,10 @@ function availableUpgradeTier() {
 function updateProfileUI() {
   const tracksComplete = Object.values(bestFinish).filter(v => v === 1).length;
   const statsEl = document.getElementById('profile-stats');
+  const nameEl = document.getElementById('profile-name-display');
+  const meta = loadSlotMeta();
+  const riderName = meta[activeSlot] ? meta[activeSlot].name : `RIDER ${activeSlot + 1}`;
+  if (nameEl) nameEl.textContent = `🏍️ ${riderName}`;
   if (statsEl) statsEl.textContent = `${playerCash} CR  ·  ${tracksComplete}/9 TRACKS`;
 }
 
@@ -7048,10 +7364,34 @@ document.getElementById('btn-reset-confirm').addEventListener('click', () => {
   resetProfile();
 });
 
-loadProfile();
-applyControlLayout();
-updateTrackUI();
-refreshGarageUI();
+document.getElementById('btn-switch-profile').addEventListener('click', showProfileSelectScreen);
+document.getElementById('btn-switch-profile').addEventListener('touchend', e => { e.preventDefault(); showProfileSelectScreen(); });
+
+document.getElementById('btn-profile-name-confirm').addEventListener('click', confirmProfileName);
+document.getElementById('btn-profile-name-confirm').addEventListener('touchend', e => { e.preventDefault(); confirmProfileName(); });
+document.getElementById('btn-profile-name-cancel').addEventListener('click', () => {
+  pendingNewSlot = null;
+  document.getElementById('ov-profile-name').style.display = 'none';
+});
+document.getElementById('btn-profile-name-cancel').addEventListener('touchend', e => {
+  e.preventDefault();
+  pendingNewSlot = null;
+  document.getElementById('ov-profile-name').style.display = 'none';
+});
+
+document.getElementById('btn-profile-delete-confirm').addEventListener('click', confirmDeleteProfileSlot);
+document.getElementById('btn-profile-delete-confirm').addEventListener('touchend', e => { e.preventDefault(); confirmDeleteProfileSlot(); });
+document.getElementById('btn-profile-delete-cancel').addEventListener('click', () => {
+  pendingDeleteSlot = null;
+  document.getElementById('ov-profile-delete').style.display = 'none';
+});
+document.getElementById('btn-profile-delete-cancel').addEventListener('touchend', e => {
+  e.preventDefault();
+  pendingDeleteSlot = null;
+  document.getElementById('ov-profile-delete').style.display = 'none';
+});
+
+initProfileSystem();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
