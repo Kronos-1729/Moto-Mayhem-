@@ -324,6 +324,15 @@ canvas{display:block;width:100%;height:100%;}
 .track-card.locked{cursor:not-allowed;opacity:.45;}
 .track-card.locked .track-icon{filter:grayscale(1);}
 .track-card .track-lock{color:#fbbf24;font-size:8px;margin-top:4px;line-height:1.4;letter-spacing:.5px;}
+.track-play{
+  flex-shrink:0;width:38px;height:38px;border-radius:50%;
+  background:rgba(255,94,58,.15);border:1px solid rgba(255,94,58,.4);
+  color:#ff5e3a;font-size:15px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s,transform .1s;
+}
+.track-play:active{transform:scale(.9);background:rgba(255,94,58,.32);}
+.track-card.locked .track-play{display:none;}
 
 /* ── BACK BUTTON ── */
 .btn-back{
@@ -403,6 +412,54 @@ canvas{display:block;width:100%;height:100%;}
   backdrop-filter:blur(3px);
 }
 .tb.pressed{transform:scale(.88) !important;filter:brightness(1.8);box-shadow:0 0 10px rgba(255,255,255,0.25);}
+
+/* Control layout editor states */
+/* Edit mode: #tc rises above the Settings overlay so the game buttons are
+   visible/draggable through it. Exiting is handled by a dedicated button
+   rendered inside #tc itself (see #tc-edit-exit) rather than relying on
+   z-index tricks against buttons buried inside .ov's stacking context,
+   which don't work since .ov caps its children's effective paint order. */
+#tc.editing-mode{pointer-events:auto;background:rgba(0,0,0,.35);z-index:41;}
+#tc.editing-mode .tb{cursor:grab;box-shadow:0 0 0 1.5px rgba(255,255,255,.4);}
+#tc.editing-mode .tb.editing{cursor:grabbing;box-shadow:0 0 0 2px #ff5e3a,0 0 14px rgba(255,94,58,.6);z-index:5;}
+
+/* Dedicated exit affordance for the control layout editor — lives inside
+   #tc itself so it shares its stacking context and is guaranteed to sit
+   above every draggable button (z-index 10 vs their unset/5), no matter
+   how the surrounding overlay's z-index behaves. */
+#tc-edit-exit{
+  display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  z-index:10;background:#ff5e3a;color:#fff;border:2px solid rgba(255,255,255,.7);
+  padding:10px 22px;font-size:13px;font-weight:700;letter-spacing:2px;
+  font-family:'Rajdhani','Inter',sans-serif;text-transform:uppercase;
+  border-radius:6px;cursor:pointer;pointer-events:auto;
+  box-shadow:0 4px 20px rgba(255,94,58,.5);
+}
+#tc.editing-mode #tc-edit-exit{display:block;}
+
+/* Floating resize panel — appears next to whichever button was last
+   tapped (not dragged) in edit mode, since pinch/scroll gestures are
+   unreliable on small touch targets. Positioned in JS via left/top. */
+#tc-resize-panel{
+  display:none;position:absolute;z-index:11;
+  align-items:center;gap:8px;
+  background:rgba(10,11,15,.92);border:1px solid rgba(255,255,255,.25);
+  border-radius:8px;padding:6px 10px;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);
+  pointer-events:auto;
+}
+#tc-resize-panel.show{display:flex;}
+#tc-resize-panel button{
+  width:28px;height:28px;border-radius:6px;border:none;
+  background:#ff5e3a;color:#fff;font-size:16px;font-weight:700;
+  font-family:'Rajdhani','Inter',sans-serif;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+#tc-resize-panel button:active{background:#e64d2a;}
+#tc-resize-pct{
+  color:#fff;font-size:11px;font-weight:700;min-width:34px;text-align:center;
+  font-family:'Rajdhani','Inter',sans-serif;letter-spacing:.5px;
+}
 
 /* Left cluster — steering D-pad */
 #tl {bottom:24px;left:16px; width:66px;height:66px;font-size:24px;
@@ -523,6 +580,12 @@ canvas{display:block;width:100%;height:100%;}
     <div class="tb" id="tpunch">PUNCH</div>
     <div class="tb" id="tkick">KICK</div>
     <div class="tb" id="tnitro">NITRO</div>
+    <button id="tc-edit-exit">✓ DONE EDITING</button>
+    <div id="tc-resize-panel">
+      <button id="tc-resize-minus">−</button>
+      <span id="tc-resize-pct">100%</span>
+      <button id="tc-resize-plus">+</button>
+    </div>
   </div>
 
   <!-- Start Screen -->
@@ -540,6 +603,7 @@ canvas{display:block;width:100%;height:100%;}
       </div>
       <button class="btn" id="btn-race">RACE</button>
       <button class="btn secondary" id="btn-garage-open" style="margin-top:12px;">GARAGE</button>
+      <button class="btn secondary" id="btn-settings-open" style="margin-top:12px;">SETTINGS</button>
       <div id="profile-bar" style="margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;max-width:320px;">
         <div id="profile-stats" style="color:#6b7280;font-size:9px;letter-spacing:1px;font-family:'Rajdhani','Inter',sans-serif;"></div>
         <button id="btn-reset-profile" style="background:none;border:none;color:#374151;font-family:'Rajdhani','Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;padding:4px 8px;">↺ RESET PROFILE</button>
@@ -593,6 +657,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-meta">12000m · up to 5 rivals</div>
             <div class="track-best" id="track-best-0"></div>
           </div>
+          <div class="track-play" id="track-play-0">▶</div>
         </div>
         <div class="track-card locked" id="track-card-1">
           <div class="track-icon">🏖️</div>
@@ -602,6 +667,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-1"></div>
             <div class="track-lock">🔒 Finish 1st or 2nd on Night Highway</div>
           </div>
+          <div class="track-play" id="track-play-1">▶</div>
         </div>
         <div class="track-card locked" id="track-card-2">
           <div class="track-icon">🏔️</div>
@@ -611,6 +677,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-2"></div>
             <div class="track-lock">🔒 Finish 1st or 2nd on Night Highway</div>
           </div>
+          <div class="track-play" id="track-play-2">▶</div>
         </div>
       </div>
       <div class="track-select" id="track-select-1">
@@ -622,6 +689,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-3"></div>
             <div class="track-lock">🔒 Score 28+ in Street Series Championship</div>
           </div>
+          <div class="track-play" id="track-play-3">▶</div>
         </div>
         <div class="track-card locked" id="track-card-4">
           <div class="track-icon">🌆</div>
@@ -631,6 +699,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-4"></div>
             <div class="track-lock">🔒 Score 28+ in Street Series Championship</div>
           </div>
+          <div class="track-play" id="track-play-4">▶</div>
         </div>
         <div class="track-card locked" id="track-card-5">
           <div class="track-icon">⚓</div>
@@ -640,6 +709,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-5"></div>
             <div class="track-lock">🔒 Score 28+ in Street Series Championship</div>
           </div>
+          <div class="track-play" id="track-play-5">▶</div>
         </div>
       </div>
       <div class="track-select" id="track-select-2">
@@ -651,6 +721,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-6"></div>
             <div class="track-lock">🔒 Score 30+ in Outlaw Circuit Championship</div>
           </div>
+          <div class="track-play" id="track-play-6">▶</div>
         </div>
         <div class="track-card locked" id="track-card-7">
           <div class="track-icon">❄️</div>
@@ -660,6 +731,7 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-7"></div>
             <div class="track-lock">🔒 Score 30+ in Outlaw Circuit Championship</div>
           </div>
+          <div class="track-play" id="track-play-7">▶</div>
         </div>
         <div class="track-card locked" id="track-card-8">
           <div class="track-icon">🎰</div>
@@ -669,11 +741,14 @@ canvas{display:block;width:100%;height:100%;}
             <div class="track-best" id="track-best-8"></div>
             <div class="track-lock">🔒 Score 30+ in Outlaw Circuit Championship</div>
           </div>
+          <div class="track-play" id="track-play-8">▶</div>
         </div>
       </div>
       <p class="sub" id="track-desc"></p>
       <div id="unlock-banner">🔓 COASTAL RUN &amp; MOUNTAIN PASS UNLOCKED!</div>
+      <!-- START RACE button removed in favor of per-card ▶ play icons — restore by uncommenting if the per-card approach doesn't work out:
       <button class="btn" id="btn-start">START RACE</button>
+      -->
     </div>
 
     <!-- Screen 4: Garage -->
@@ -714,11 +789,39 @@ canvas{display:block;width:100%;height:100%;}
         <!-- Handling -->
         <div class="upgrade-card" id="uc-handling">
           <div class="uc-name">HANDLING</div>
-          <div class="uc-desc">Steering &amp; road grip</div>
+          <div class="uc-desc">Steering &amp; knockdown resistance</div>
           <div class="uc-tier" id="uc-tier-handling">TIER 0 / 5</div>
           <div class="pip-row" id="uc-pips-handling"></div>
           <div class="uc-next" id="uc-next-handling"></div>
           <button class="btn-upgrade" id="btn-buy-handling">UPGRADE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: Settings -->
+    <div class="menu-screen" id="menu-settings">
+      <button class="btn-back" id="btn-back-settings">◀ BACK</button>
+      <div class="garage-header">
+        <span style="color:#fff;font-size:13px;font-weight:700;letter-spacing:2px;font-family:'Rajdhani','Inter',sans-serif;">SETTINGS</span>
+      </div>
+      <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:20px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Rajdhani','Inter',sans-serif;">🔊 VOLUME</span>
+            <span id="volume-value" style="color:#9ca3af;font-size:11px;font-family:'Rajdhani','Inter',sans-serif;">100%</span>
+          </div>
+          <input type="range" id="volume-slider" min="0" max="100" value="100" style="width:100%;accent-color:#ff5e3a;">
+        </div>
+
+        <div>
+          <div style="color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Rajdhani','Inter',sans-serif;margin-bottom:8px;">🎮 CONTROL LAYOUT</div>
+          <div id="layout-hint" style="display:none;color:#9ca3af;font-size:9px;letter-spacing:.5px;font-family:'Rajdhani','Inter',sans-serif;margin-bottom:10px;line-height:1.6;">
+            Drag any button to reposition it. Tap it (without dragging) to bring up size controls. Tap DONE EDITING when finished.
+          </div>
+          <div class="btn-row" style="gap:10px;">
+            <button class="btn secondary" id="btn-edit-layout" style="flex:1;">EDIT LAYOUT</button>
+            <button class="btn secondary" id="btn-reset-layout" style="flex:1;">RESET</button>
+          </div>
         </div>
       </div>
     </div>
@@ -790,6 +893,9 @@ canvas{display:block;width:100%;height:100%;}
     <div class="champ-new-best" id="champ-new-best" style="display:none;">🏆 NEW BEST!</div>
     <div class="champ-breakdown" id="champ-breakdown"></div>
     <div class="champ-credits" id="champ-credits"></div>
+    <div class="champ-gauntlet-hint" id="champ-gauntlet-hint" style="display:none;color:#fbbf24;font-size:11px;font-weight:600;letter-spacing:.5px;margin-top:4px;font-family:'Rajdhani','Inter',sans-serif;">
+      Finish all 3 races without a DNF and score 30+ points to beat the Gauntlet.
+    </div>
     <div class="btn-row">
       <button class="btn" id="btn-champ-again">PLAY AGAIN</button>
       <button class="btn secondary" id="btn-champ-menu">MAIN MENU</button>
@@ -832,7 +938,8 @@ function tone(freq, type, dur, vol = 0.25, freqEnd) {
     o.type = type;
     o.frequency.setValueAtTime(freq, ctx.currentTime);
     if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, ctx.currentTime + dur);
-    g.gain.setValueAtTime(vol, ctx.currentTime);
+    const outVol = vol * (typeof settings !== 'undefined' ? settings.masterVolume : 1);
+    g.gain.setValueAtTime(outVol, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
     o.start(); o.stop(ctx.currentTime + dur);
   } catch(e) {}
@@ -869,7 +976,8 @@ function updateEngine(speed, maxSpeed) {
     const t = speed / maxSpeed;
     const freq = 55 + t * 160 + (Math.random() - 0.5) * 4;
     _engineNode.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
-    _engineGain.gain.setTargetAtTime(speed > 2 ? 0.06 + t * 0.06 : 0, ctx.currentTime, 0.05);
+    const targetGain = speed > 2 ? (0.06 + t * 0.06) * settings.masterVolume : 0;
+    _engineGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.05);
   } catch(e) {}
 }
 
@@ -998,9 +1106,9 @@ const TRACKS = [
     totalDist: 12000,
     theme: 'night',
     waves: [
-      { rivals: 3, aggro: 0.7, label: 'WAVE 1 — ROOKIE PACK' },
-      { rivals: 4, aggro: 1.0, label: 'WAVE 2 — THE IRON HAWKS' },
-      { rivals: 5, aggro: 1.35,label: 'WAVE 3 — DEATH RIDERS' },
+      { rivals: 3, aggro: 0.53, label: 'WAVE 1 — ROOKIE PACK' },
+      { rivals: 4, aggro: 0.75, label: 'WAVE 2 — THE IRON HAWKS' },
+      { rivals: 5, aggro: 1.01,label: 'WAVE 3 — DEATH RIDERS' },
     ],
   },
   {
@@ -1013,9 +1121,9 @@ const TRACKS = [
     // Coastal Run rivals run hotter than Night Highway or Mountain Pass —
     // the beach gangs ram sooner, swing harder, and swing more often.
     waves: [
-      { rivals: 4, aggro: 0.95, label: 'WAVE 1 — BEACH PATROL' },
-      { rivals: 5, aggro: 1.30, label: 'WAVE 2 — SHORELINE CRUISERS' },
-      { rivals: 6, aggro: 1.70, label: 'WAVE 3 — TIDE RUNNERS' },
+      { rivals: 4, aggro: 0.71, label: 'WAVE 1 — BEACH PATROL' },
+      { rivals: 5, aggro: 0.98, label: 'WAVE 2 — SHORELINE CRUISERS' },
+      { rivals: 6, aggro: 1.28, label: 'WAVE 3 — TIDE RUNNERS' },
     ],
   },
   {
@@ -1026,9 +1134,9 @@ const TRACKS = [
     locked: true,
     unlockHint: 'Finish 1st or 2nd on Night Highway',
     waves: [
-      { rivals: 4, aggro: 0.80, label: 'WAVE 1 — PEAK WOLVES' },
-      { rivals: 5, aggro: 1.10, label: 'WAVE 2 — RIDGE RUNNERS' },
-      { rivals: 6, aggro: 1.40, label: 'WAVE 3 — AVALANCHE CREW' },
+      { rivals: 4, aggro: 0.60, label: 'WAVE 1 — PEAK WOLVES' },
+      { rivals: 5, aggro: 0.83, label: 'WAVE 2 — RIDGE RUNNERS' },
+      { rivals: 6, aggro: 1.05, label: 'WAVE 3 — AVALANCHE CREW' },
     ],
   },
   {
@@ -1041,9 +1149,9 @@ const TRACKS = [
     // Opening leg of the Outlaw Circuit — already meaner than anything in the
     // Street Series, with bigger packs and rivals that swing sooner and harder.
     waves: [
-      { rivals: 5, aggro: 1.50, label: 'WAVE 1 — DUST RAIDERS' },
-      { rivals: 6, aggro: 1.85, label: 'WAVE 2 — SANDSTORM GANG' },
-      { rivals: 7, aggro: 2.20, label: 'WAVE 3 — OUTLAW CONVOY' },
+      { rivals: 5, aggro: 1.13, label: 'WAVE 1 — DUST RAIDERS' },
+      { rivals: 6, aggro: 1.39, label: 'WAVE 2 — SANDSTORM GANG' },
+      { rivals: 7, aggro: 1.65, label: 'WAVE 3 — OUTLAW CONVOY' },
     ],
   },
   {
@@ -1054,9 +1162,9 @@ const TRACKS = [
     locked: true,
     unlockHint: 'Finish top 2 on all Street Series tracks',
     waves: [
-      { rivals: 5, aggro: 1.60, label: 'WAVE 1 — STREET CREWS' },
-      { rivals: 6, aggro: 1.95, label: 'WAVE 2 — BLOCK ENFORCERS' },
-      { rivals: 7, aggro: 2.35, label: 'WAVE 3 — MIDNIGHT SYNDICATE' },
+      { rivals: 5, aggro: 1.20, label: 'WAVE 1 — STREET CREWS' },
+      { rivals: 6, aggro: 1.46, label: 'WAVE 2 — BLOCK ENFORCERS' },
+      { rivals: 7, aggro: 1.76, label: 'WAVE 3 — MIDNIGHT SYNDICATE' },
     ],
   },
   {
@@ -1069,9 +1177,9 @@ const TRACKS = [
     // The final, hardest leg of the Outlaw Circuit — the largest packs and
     // the highest aggro of any track in the game.
     waves: [
-      { rivals: 6, aggro: 1.70, label: 'WAVE 1 — DOCKHANDS' },
-      { rivals: 7, aggro: 2.05, label: 'WAVE 2 — CONTAINER CREW' },
-      { rivals: 8, aggro: 2.50, label: 'WAVE 3 — THE CARTEL' },
+      { rivals: 6, aggro: 1.28, label: 'WAVE 1 — DOCKHANDS' },
+      { rivals: 7, aggro: 1.54, label: 'WAVE 2 — CONTAINER CREW' },
+      { rivals: 8, aggro: 1.88, label: 'WAVE 3 — THE CARTEL' },
     ],
   },
   {
@@ -1088,9 +1196,9 @@ const TRACKS = [
     trafficSpawnMult: 0.70,  // traffic spawns more frequently
     nitroRechargeMult: 0.70, // nitro recharges 30% slower
     waves: [
-      { rivals: 6, aggro: 1.80, label: 'WAVE 1 — ASH RIDERS' },
-      { rivals: 7, aggro: 2.15, label: 'WAVE 2 — MAGMA PACK' },
-      { rivals: 8, aggro: 2.50, label: 'WAVE 3 — INFERNO LEGION' },
+      { rivals: 6, aggro: 1.35, label: 'WAVE 1 — ASH RIDERS' },
+      { rivals: 7, aggro: 1.61, label: 'WAVE 2 — MAGMA PACK' },
+      { rivals: 8, aggro: 1.88, label: 'WAVE 3 — INFERNO LEGION' },
     ],
   },
   {
@@ -1105,9 +1213,9 @@ const TRACKS = [
     trafficSpawnMult: 0.65,
     nitroRechargeMult: 0.70,
     waves: [
-      { rivals: 6, aggro: 1.85, label: 'WAVE 1 — FROST RUNNERS' },
-      { rivals: 8, aggro: 2.20, label: 'WAVE 2 — BLIZZARD PACK' },
-      { rivals: 9, aggro: 2.50, label: 'WAVE 3 — ICE REAPERS' },
+      { rivals: 6, aggro: 1.39, label: 'WAVE 1 — FROST RUNNERS' },
+      { rivals: 8, aggro: 1.65, label: 'WAVE 2 — BLIZZARD PACK' },
+      { rivals: 9, aggro: 1.88, label: 'WAVE 3 — ICE REAPERS' },
     ],
   },
   {
@@ -1124,9 +1232,9 @@ const TRACKS = [
     trafficSpawnMult: 0.60,
     nitroRechargeMult: 0.70,
     waves: [
-      { rivals: 7, aggro: 1.90, label: 'WAVE 1 — NEON RACERS' },
-      { rivals: 8, aggro: 2.25, label: 'WAVE 2 — HIGH ROLLERS' },
-      { rivals: 9, aggro: 2.50, label: 'WAVE 3 — THE HOUSE ALWAYS WINS' },
+      { rivals: 7, aggro: 1.43, label: 'WAVE 1 — NEON RACERS' },
+      { rivals: 8, aggro: 1.69, label: 'WAVE 2 — HIGH ROLLERS' },
+      { rivals: 9, aggro: 1.88, label: 'WAVE 3 — THE HOUSE ALWAYS WINS' },
     ],
   },
 ];
@@ -1314,11 +1422,13 @@ const PRESS_COLOURS = {
   tgas: 'rgba(52,211,153,.40)', tbrk: 'rgba(255,94,58,.40)',
   tpunch: 'rgba(251,113,133,.38)', tkick: 'rgba(255,138,92,.38)',
 };
+let editModeActive = false;
+
 function bindTouch(id, key) {
   const el = document.getElementById(id);
   if (!el) return;
-  const dn = e => { e.preventDefault(); inp[key] = 1; el.classList.add('pressed'); el.style.background = PRESS_COLOURS[id] || ''; };
-  const up = e => { e.preventDefault(); inp[key] = 0; el.classList.remove('pressed'); el.style.background = ''; };
+  const dn = e => { if (editModeActive) return; e.preventDefault(); inp[key] = 1; el.classList.add('pressed'); el.style.background = PRESS_COLOURS[id] || ''; };
+  const up = e => { if (editModeActive) return; e.preventDefault(); inp[key] = 0; el.classList.remove('pressed'); el.style.background = ''; };
   el.addEventListener('touchstart', dn, { passive:false });
   el.addEventListener('touchend',   up, { passive:false });
   el.addEventListener('touchcancel',up, { passive:false });
@@ -1330,6 +1440,239 @@ bindTouch('tl','left'); bindTouch('tr','right');
 bindTouch('tgas','gas'); bindTouch('tbrk','brake');
 bindTouch('tpunch','punch'); bindTouch('tkick','kick');
 bindTouch('tup','nitro'); bindTouch('tnitro','nitro');
+
+// ════════════════════════════════════════════════════════════
+// CONTROL LAYOUT EDITOR
+// ════════════════════════════════════════════════════════════
+// Each button's shipped position/size, exactly matching the CSS above —
+// used as the reset target and as the base that saved offsets apply on
+// top of, so old saves stay valid if default positions ever change.
+const DEFAULT_LAYOUT = {
+  tl:     { bottom:24,  left:16,  right:null, width:66, height:66 },
+  tr:     { bottom:24,  left:92,  right:null, width:66, height:66 },
+  tup:    { bottom:96,  left:54,  right:null, width:54, height:54 },
+  tgas:   { bottom:24,  left:null, right:16,  width:74, height:74 },
+  tbrk:   { bottom:108, left:null, right:16,  width:56, height:56 },
+  tpunch: { bottom:24,  left:null, right:106, width:64, height:64 },
+  tkick:  { bottom:92,  left:null, right:98,  width:58, height:58 },
+  tnitro: { bottom:174, left:null, right:16,  width:52, height:52 },
+};
+const CONTROL_IDS = Object.keys(DEFAULT_LAYOUT);
+
+// Saved per-button offsets (dx, dy in px from default position) plus an
+// optional per-button scale multiplier. Empty object = all defaults.
+const controlLayout = {}; // e.g. { tgas: { dx: 10, dy: -5, scale: 1.1 } }
+
+// Apply DEFAULT_LAYOUT + controlLayout overrides to the live #tc buttons.
+// Called on load and whenever a layout change needs to take visible effect.
+function applyControlLayout() {
+  for (const id of CONTROL_IDS) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const def = DEFAULT_LAYOUT[id];
+    const ov  = controlLayout[id] || { dx: 0, dy: 0, scale: 1 };
+    const scale = ov.scale || 1;
+
+    el.style.width  = (def.width  * scale) + 'px';
+    el.style.height = (def.height * scale) + 'px';
+    el.style.bottom = (def.bottom - ov.dy) + 'px';
+    if (def.left !== null) {
+      el.style.left  = (def.left + ov.dx) + 'px';
+      el.style.right = '';
+    } else {
+      el.style.right = (def.right - ov.dx) + 'px';
+      el.style.left  = '';
+    }
+  }
+}
+
+// ── Drag-to-reposition + pinch/wheel-to-resize (edit mode only) ──
+let dragState = null;  // { id, startX, startY, origDx, origDy }
+let pinchState = null; // { id, startDist, origScale }
+
+const SCALE_MIN = 0.6, SCALE_MAX = 1.6;
+
+function controlPointerPos(e) {
+  const rect = document.getElementById('tc').getBoundingClientRect();
+  const t = e.touches && e.touches[0] ? e.touches[0] : e;
+  // Scale from on-screen pixels to the game's internal 900×506 coordinate
+  // space, since #wrap can be displayed at any zoom level.
+  const scaleX = 900 / rect.width;
+  return {
+    x: (t.clientX - rect.left) * scaleX,
+    y: (t.clientY - rect.top) * scaleX,
+  };
+}
+
+function touchDist(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+function startDrag(id, e) {
+  if (!editModeActive) return;
+  e.preventDefault();
+
+  // Two-finger touch on a button = pinch-to-resize instead of drag
+  if (e.touches && e.touches.length === 2) {
+    dragState = null;
+    const ov = controlLayout[id] || { dx: 0, dy: 0, scale: 1 };
+    pinchState = { id, startDist: touchDist(e.touches), origScale: ov.scale || 1 };
+    document.getElementById(id).classList.add('editing');
+    return;
+  }
+
+  const pos = controlPointerPos(e);
+  const ov = controlLayout[id] || { dx: 0, dy: 0, scale: 1 };
+  dragState = { id, startX: pos.x, startY: pos.y, origDx: ov.dx || 0, origDy: ov.dy || 0, moved: 0 };
+  document.getElementById(id).classList.add('editing');
+}
+
+function moveDrag(e) {
+  // Pinch resize takes priority if a second finger is down
+  if (pinchState && e.touches && e.touches.length === 2) {
+    e.preventDefault();
+    const dist = touchDist(e.touches);
+    const factor = dist / pinchState.startDist;
+    const id = pinchState.id;
+    const scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, pinchState.origScale * factor));
+    controlLayout[id] = { ...(controlLayout[id] || {}), scale };
+    applyControlLayout();
+    return;
+  }
+
+  if (!dragState) return;
+  e.preventDefault();
+  const pos = controlPointerPos(e);
+  const id = dragState.id;
+  const dx = dragState.origDx + (pos.x - dragState.startX);
+  const dy = dragState.origDy + (pos.y - dragState.startY);
+  dragState.moved = Math.max(dragState.moved, Math.hypot(pos.x - dragState.startX, pos.y - dragState.startY));
+  controlLayout[id] = { ...(controlLayout[id] || {}), dx, dy };
+  applyControlLayout();
+}
+
+// Below this many internal-coordinate px of total movement, a press+release
+// counts as a tap (select this button for resizing) rather than a drag.
+const TAP_MOVE_THRESHOLD = 6;
+
+function endDrag() {
+  if (dragState) {
+    document.getElementById(dragState.id).classList.remove('editing');
+    if (dragState.moved < TAP_MOVE_THRESHOLD) selectButtonForResize(dragState.id);
+    dragState = null;
+  }
+  if (pinchState) {
+    document.getElementById(pinchState.id).classList.remove('editing');
+    pinchState = null;
+  }
+}
+
+// Desktop fallback for resizing: scroll wheel over a button while its
+// element has focus/hover in edit mode. Mirrors pinch behavior 1:1.
+function wheelResize(id, e) {
+  if (!editModeActive) return;
+  e.preventDefault();
+  const ov = controlLayout[id] || { dx: 0, dy: 0, scale: 1 };
+  const cur = ov.scale || 1;
+  const scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, cur + (e.deltaY < 0 ? 0.05 : -0.05)));
+  controlLayout[id] = { ...ov, scale };
+  applyControlLayout();
+}
+
+function enableLayoutEditing() {
+  editModeActive = true;
+  document.getElementById('tc').classList.remove('hidden');
+  document.getElementById('tc').classList.add('editing-mode');
+}
+
+function disableLayoutEditing() {
+  editModeActive = false;
+  document.getElementById('tc').classList.add('hidden');
+  document.getElementById('tc').classList.remove('editing-mode');
+  dragState = null;
+  pinchState = null;
+  hideResizePanel();
+}
+
+// Bind edit-mode listeners once — each handler no-ops unless
+// editModeActive is true, so this is safe to leave attached at all times
+// and avoids stacking duplicate listeners across repeated edit sessions.
+for (const id of CONTROL_IDS) {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e => startDrag(id, e), { passive:false });
+  el.addEventListener('mousedown',  e => startDrag(id, e));
+  el.addEventListener('wheel', e => wheelResize(id, e), { passive:false });
+}
+document.addEventListener('touchmove', moveDrag, { passive:false });
+document.addEventListener('mousemove', moveDrag);
+document.addEventListener('touchend',  endDrag);
+document.addEventListener('mouseup',   endDrag);
+
+function resetControlLayout() {
+  for (const id of CONTROL_IDS) delete controlLayout[id];
+  applyControlLayout();
+  hideResizePanel();
+}
+
+// ── Tap-to-select resize panel ──
+// Pinch/scroll resizing is unreliable on small touch targets, so tapping
+// (rather than dragging) a button in edit mode opens a small floating
+// −/+ panel anchored just above it instead.
+let resizeSelectedId = null;
+
+function selectButtonForResize(id) {
+  resizeSelectedId = id;
+  const el = document.getElementById(id);
+  const panel = document.getElementById('tc-resize-panel');
+  const rect = el.getBoundingClientRect();
+  const tcRect = document.getElementById('tc').getBoundingClientRect();
+  const scaleX = 900 / tcRect.width;
+
+  // Make the panel visible first so its real rendered width is measurable —
+  // it's display:none until .show is added, so any earlier measurement
+  // would read 0 and defeat the clamping below.
+  panel.classList.add('show');
+  panel.style.transform = 'none'; // switch from centered transform to explicit left-edge positioning
+
+  // Position in the game's internal 900×506 coordinate space (same space
+  // applyControlLayout writes left/right/bottom in), centered above the
+  // selected button, then clamp so it can never overflow either edge.
+  const panelWidthInternal = panel.getBoundingClientRect().width * scaleX;
+  const centerX = (rect.left + rect.width / 2 - tcRect.left) * scaleX;
+  let leftX = centerX - panelWidthInternal / 2;
+  leftX = Math.max(4, Math.min(900 - panelWidthInternal - 4, leftX));
+
+  const topY = (rect.top - tcRect.top) * scaleX;
+  panel.style.left = leftX + 'px';
+  panel.style.top  = Math.max(4, topY - 44) + 'px';
+
+  updateResizePanelReadout();
+}
+
+function hideResizePanel() {
+  resizeSelectedId = null;
+  document.getElementById('tc-resize-panel').classList.remove('show');
+}
+
+function updateResizePanelReadout() {
+  if (!resizeSelectedId) return;
+  const ov = controlLayout[resizeSelectedId] || { scale: 1 };
+  document.getElementById('tc-resize-pct').textContent = Math.round((ov.scale || 1) * 100) + '%';
+}
+
+function nudgeSelectedScale(delta) {
+  if (!resizeSelectedId) return;
+  const id = resizeSelectedId;
+  const ov = controlLayout[id] || { dx: 0, dy: 0, scale: 1 };
+  const scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, (ov.scale || 1) + delta));
+  controlLayout[id] = { ...ov, scale };
+  applyControlLayout();
+  // Re-anchor the panel since resizing shifts the button's on-screen rect,
+  // and update the percentage readout to match the new size.
+  selectButtonForResize(id);
+}
 
 const KMAP = {
   ArrowLeft:'left', a:'left', A:'left',
@@ -1457,6 +1800,20 @@ function roadBend(z, dist) {
   return (CUM_CURVE[i1] - CUM_CURVE[i0]) * BEND_SCALE * bendAmp;
 }
 
+// Instantaneous sideways pull of the road centerline at the player's own
+// position (i.e. the curve's slope right where the bike currently is).
+// Used to physically drag the bike along with the road when the player
+// isn't actively steering — without this, gas-only travel keeps you glued
+// to the world-space center line even through curves, making the bends
+// purely cosmetic. A real curving road pushes the rider sideways as it
+// turns; this reproduces that.
+function roadCurveRate(dist) {
+  const i0 = Math.min(CUM_CURVE_LEN - 1, Math.max(0, Math.floor(dist)));
+  const i1 = Math.min(CUM_CURVE_LEN - 1, Math.max(0, Math.floor(dist + 1)));
+  const bendAmp = (G.theme === 'mountain') ? 2.1 : 1.0;
+  return (CUM_CURVE[i1] - CUM_CURVE[i0]) * BEND_SCALE * bendAmp;
+}
+
 // ════════════════════════════════════════════════════════════
 // PROJECTION
 // ════════════════════════════════════════════════════════════
@@ -1491,6 +1848,12 @@ let currentSeries = 0; // which series' track list is shown on Screen 3 (0 = Str
 let playerCash = 0;
 const playerUpgrades = { engine: 0, armor: 0, nitro: 0, handling: 0 }; // 0-5 each
 
+// Player-adjustable settings — persists across races and sessions, separate
+// from G since G is fully rebuilt on every initGame() call.
+const settings = {
+  masterVolume: 1.0, // 0 (muted) to 1 (full volume)
+};
+
 // Per-tier upgrade costs (credits). Index 0 = cost of tier 1, ... index 4 = cost of tier 5.
 const UPGRADE_COSTS = {
   engine:   [400, 700, 1100, 1600, 2200],
@@ -1513,6 +1876,8 @@ function saveProfile() {
     gauntletUnlocked,
     seriesCompletionAwarded: { ...seriesCompletionAwarded },
     championshipIntroSeen: { ...championshipIntroSeen },
+    settings: { ...settings },
+    controlLayout: JSON.parse(JSON.stringify(controlLayout)),
   };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(profile)); } catch(e) {}
 }
@@ -1531,6 +1896,11 @@ function loadProfile() {
     if (typeof p.gauntletUnlocked === 'boolean') gauntletUnlocked = p.gauntletUnlocked;
     if (p.seriesCompletionAwarded) Object.assign(seriesCompletionAwarded, p.seriesCompletionAwarded);
     if (p.championshipIntroSeen) Object.assign(championshipIntroSeen, p.championshipIntroSeen);
+    if (p.settings && typeof p.settings.masterVolume === 'number') settings.masterVolume = p.settings.masterVolume;
+    if (p.controlLayout) {
+      for (const id of Object.keys(p.controlLayout)) controlLayout[id] = p.controlLayout[id];
+      applyControlLayout();
+    }
     updateProfileUI();
   } catch(e) {}
 }
@@ -1546,6 +1916,8 @@ function resetProfile() {
   gauntletUnlocked = false;
   Object.assign(seriesCompletionAwarded, { 0:false, 1:false, 2:false });
   Object.assign(championshipIntroSeen, { 0:false, 1:false, 2:false });
+  settings.masterVolume = 1.0;
+  resetControlLayout();
   updateTrackUI();
   refreshGarageUI();
   updateProfileUI();
@@ -1818,7 +2190,9 @@ function checkPlayerTrafficCollisions() {
       p.hp = Math.max(0, p.hp - dmg);
       p.speed *= 0.4;
       p.invFrames = 55;
-      p.isDown = 45;
+      // Traffic starts at a guaranteed knockdown, reduced by the Handling
+      // upgrade — unlike forklifts/boulders, this one can be mitigated.
+      if (Math.random() < 1.0 * G.knockdownResistMult) p.isDown = 45;
       hitTraffic(v);
       triggerShake(5);
       sfx('crash');
@@ -1972,7 +2346,9 @@ function checkPlayerPoliceCollision() {
     p.hp = Math.max(0, p.hp - dmg);
     p.speed *= 0.45;
     p.invFrames = 55;
-    p.isDown = 40;
+    // Police rams start at a 90% chance to knock the player down, reduced
+    // by the Handling upgrade.
+    if (Math.random() < 0.9 * G.knockdownResistMult) p.isDown = 40;
     pol.hitFlash = 12;
     pol.hitCooldown = 80;
     triggerShake(5);
@@ -4781,9 +5157,12 @@ function updatePlayer(dt) {
     p.x += G.iceSlide;
   }
 
-  // Note: the road bends visually (see roadBend), but the bike's lateral
-  // position is controlled purely by player steering — gas/brake alone
-  // never pushes you sideways through a curve.
+  // The road physically drags the bike sideways as it curves — scaled by
+  // how much distance passes this frame, so faster travel through a bend
+  // pulls harder, matching how far the curve has actually rotated under you.
+  // Steering (above) still lets the player fight or lean into this pull.
+  const curvePull = roadCurveRate(G.distance) * (p.speed * (dt/1000));
+  p.x += curvePull;
 
   // Lane boundary: the playable range (RC ± RH-ish) is comfortably inside
   // the rendered road surface, so this is just a soft clamp to keep the
@@ -4915,7 +5294,10 @@ function updateRivals(dt) {
         p.hp = Math.max(0, p.hp - dmg);
         p.invFrames = 60;
         p.speed *= 0.6;
-        p.isDown = 50;
+        // Rams start at an 85% chance to knock the player down, reduced by
+        // the Handling upgrade — still very likely to connect, but no
+        // longer an absolute guarantee at higher tiers.
+        if (Math.random() < 0.85 * G.knockdownResistMult) p.isDown = 50;
         triggerShake(4);
         sfx('crash');
         dmgNum(p.x - 20, H - 110, `-${dmg} RAM`, '#ff6600');
@@ -4935,7 +5317,7 @@ function updateRivals(dt) {
         const dmg = Math.floor((8 + Math.random()*14) * r.aggro);
         p.hp = Math.max(0, p.hp - dmg);
         p.invFrames = 40;
-        const knockdownChance = isCoastal ? 0.3 : 0.2;
+        const knockdownChance = (isCoastal ? 0.3 : 0.2) * G.knockdownResistMult;
         if (Math.random() < knockdownChance * r.aggro) { p.isDown = 55; p.speed *= 0.45; }
         triggerShake(3);
         sfx('hit');
@@ -5661,6 +6043,10 @@ function gameLoop(ts) {
 // ════════════════════════════════════════════════════════════
 function startGame() {
   try { ac().resume(); } catch(e) {}
+  // Safety net: guarantee edit mode is off and the HUD is back to normal
+  // gameplay state, in case Settings was left mid-edit via an unusual path.
+  editModeActive = false;
+  document.getElementById('tc').classList.remove('editing-mode');
   initGame(selectedTrack);
   G.running = true;
   document.getElementById('ov-start').style.display = 'none';
@@ -5677,6 +6063,12 @@ function startGame() {
 // 3, 2, 1, GO! — gameplay (player/rival movement, combat, etc.) is held off
 // via G.raceStarted until this finishes, but the world renders normally
 // throughout so it doesn't feel frozen.
+// Holds the pending setTimeout ID for the countdown's recursive step chain,
+// so it can be cancelled if the player exits/pauses mid-countdown — without
+// this, the countdown's beeps kept firing on their own schedule even after
+// the player had already backed out to the menu.
+let countdownTimeoutId = null;
+
 function startCountdown() {
   const wrapEl = document.getElementById('countdown');
   const numEl  = document.getElementById('countdown-num');
@@ -5697,9 +6089,10 @@ function startCountdown() {
 
     i++;
     if (i < steps.length) {
-      setTimeout(showStep, 1000);
+      countdownTimeoutId = setTimeout(showStep, 1000);
     } else {
-      setTimeout(() => {
+      countdownTimeoutId = setTimeout(() => {
+        countdownTimeoutId = null;
         wrapEl.style.display = 'none';
         G.raceStarted = true;
         startEngine();
@@ -5707,6 +6100,14 @@ function startCountdown() {
     }
   }
   showStep();
+}
+
+// Cancels any in-flight countdown step, if one is pending.
+function cancelCountdown() {
+  if (countdownTimeoutId !== null) {
+    clearTimeout(countdownTimeoutId);
+    countdownTimeoutId = null;
+  }
 }
 
 function endGame(win) {
@@ -5749,6 +6150,11 @@ function endGame(win) {
     const racePoints = calcChampionshipPoints(win, place, G.player.ko, hpPct);
     championship.points[championship.raceIdx] = racePoints;
     championship.totalPoints = championship.points.reduce((a, b) => a + b, 0);
+    // Full clear = reached and finished race 3 without DNFing anywhere along
+    // the way. A DNF on any race (including the third) ends the run right
+    // there, so raceIdx would never legitimately reach 2 with win === true
+    // unless races 1 and 2 were both finished (not DNF'd) beforehand.
+    championship.fullClear = (championship.raceIdx === 2 && win);
   }
 
   // Garage / economy: tally credits earned this race
@@ -5853,6 +6259,7 @@ function endGame(win) {
 function pauseGame() {
   if (!G.running || G.paused) return;
   G.paused = true;
+  cancelCountdown();
   stopEngine();
   document.getElementById('ov-pause').style.display = 'flex';
 }
@@ -5861,7 +6268,15 @@ function resumeGame() {
   if (!G.paused) return;
   G.paused = false;
   document.getElementById('ov-pause').style.display = 'none';
-  if (G.raceStarted) startEngine();
+  if (G.raceStarted) {
+    startEngine();
+  } else {
+    // The countdown was cancelled when the player paused mid-countdown
+    // (see pauseGame/cancelCountdown) — restart it now, otherwise the race
+    // would be stuck forever with raceStarted still false and no countdown
+    // running to ever flip it.
+    startCountdown();
+  }
   lastTs = performance.now();
   requestAnimationFrame(gameLoop);
 }
@@ -5873,6 +6288,7 @@ function exitToMenu() {
   }
   G.running = false;
   G.paused = false;
+  cancelCountdown();
   stopEngine();
   document.getElementById('ov-pause').style.display = 'none';
   document.getElementById('ov-over').style.display  = 'none';
@@ -5931,7 +6347,8 @@ let championship = {
   seriesIdx: 0,
   raceIdx: 0,
   points: [0, 0, 0],
-  totalPoints: 0
+  totalPoints: 0,
+  fullClear: false
 };
 
 // Flavor text for each series' championship intro screen — same voice as
@@ -5994,7 +6411,7 @@ function showChampionshipIntro(seriesIdx) {
 // Actually kicks off the championship run for the given series, jumping
 // straight into the first race.
 function beginActualChampionship(seriesIdx) {
-  championship = { active: true, seriesIdx, raceIdx: 0, points: [0,0,0], totalPoints: 0 };
+  championship = { active: true, seriesIdx, raceIdx: 0, points: [0,0,0], totalPoints: 0, fullClear: false };
   const firstTrack = seriesIdx * 3;
   selectTrack(firstTrack);
   // Start race directly — skip track select screen to avoid the flash
@@ -6071,12 +6488,28 @@ function showChampionshipResults() {
   document.getElementById('champ-credits').textContent = `+${creditsBonus} CREDITS BONUS`;
   document.getElementById('champ-new-best').style.display = isNewBest ? '' : 'none';
 
-  // Show result screen, hide race over screen
-  document.getElementById('ov-over').style.display = 'none';
-  document.getElementById('ov-championship').style.display = 'flex';
+  // Elite Gauntlet: nudge the player toward the actual win condition
+  // (full clear, no DNF, 30+ points) if this run didn't meet it.
+  const gauntletHint = document.getElementById('champ-gauntlet-hint');
+  gauntletHint.style.display = (s.seriesIdx === 2 && !(s.fullClear && s.totalPoints >= 30)) ? 'block' : 'none';
 
-  // Reset championship state
-  championship = { active: false, seriesIdx: s.seriesIdx, raceIdx: 0, points: [0,0,0], totalPoints: 0 };
+  // Show result screen, hide race over screen — unless this run just
+  // earned the Elite Gauntlet's true win condition (full clear, no DNF,
+  // 30+ points), in which case Road Legend shows first; its own CONTINUE
+  // button is responsible for revealing this already-populated results
+  // screen afterward.
+  document.getElementById('ov-over').style.display = 'none';
+  if (s.seriesIdx === 2 && s.fullClear && s.totalPoints >= 30) {
+    showGameCompleteScreen();
+  } else {
+    document.getElementById('ov-championship').style.display = 'flex';
+  }
+
+  // Reset championship state for next time. seriesIdx must survive the
+  // reset since PLAY AGAIN reads it to restart the same series; fullClear
+  // and totalPoints no longer need to survive it (the Road Legend decision
+  // above already happened), but are harmless to carry over regardless.
+  championship = { active: false, seriesIdx: s.seriesIdx, raceIdx: 0, points: [0,0,0], totalPoints: s.totalPoints, fullClear: s.fullClear };
 
   updateTrackUI();
   updateProfileUI();
@@ -6213,13 +6646,29 @@ function applyUpgrades() {
 
   // Handling
   G.effectiveSteerSpd = STEER_SPD * (1 + playerUpgrades.handling * 0.08);
+  // Each Handling tier reduces the chance that a hit knocks the player off
+  // the bike (rival attacks, rams, traffic) by 10%. Forklifts and mountain
+  // boulders are excluded — those always knock the player down regardless
+  // of Handling tier.
+  G.knockdownResistMult = 1 - playerUpgrades.handling * 0.1;
 }
 
 // ── MENU NAVIGATION ──────────────────────────────────────────
 function showMenuScreen(id) {
-  ['menu-main','menu-series','menu-tracks','menu-garage'].forEach(s => {
+  ['menu-main','menu-series','menu-tracks','menu-garage','menu-settings'].forEach(s => {
     document.getElementById(s).classList.toggle('active', s === id);
   });
+  if (id === 'menu-series') updateSeriesSelectUI();
+}
+
+// Highlights whichever series card matches the currently selected track,
+// instead of leaving Street Series permanently highlighted from its
+// hardcoded initial markup.
+function updateSeriesSelectUI() {
+  const activeSeriesIdx = Math.floor(selectedTrack / 3);
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('series-card-' + i).classList.toggle('active', i === activeSeriesIdx);
+  }
 }
 
 // Show the track list for a series (0 = Street Series, 1 = Outlaw Circuit, 2 = Elite Gauntlet) on Screen 3
@@ -6375,6 +6824,69 @@ document.getElementById('btn-garage-open').addEventListener('touchend', e => { e
 document.getElementById('btn-back-garage').addEventListener('click', () => showMenuScreen('menu-main'));
 document.getElementById('btn-back-garage').addEventListener('touchend', e => { e.preventDefault(); showMenuScreen('menu-main'); });
 
+// Settings navigation
+function refreshSettingsUI() {
+  const pct = Math.round(settings.masterVolume * 100);
+  document.getElementById('volume-slider').value = pct;
+  document.getElementById('volume-value').textContent = pct + '%';
+}
+document.getElementById('btn-settings-open').addEventListener('click', () => { refreshSettingsUI(); showMenuScreen('menu-settings'); });
+document.getElementById('btn-settings-open').addEventListener('touchend', e => { e.preventDefault(); refreshSettingsUI(); showMenuScreen('menu-settings'); });
+function exitSettingsScreen() {
+  if (editModeActive) {
+    disableLayoutEditing();
+    btnEditLayout.textContent = 'EDIT LAYOUT';
+    document.getElementById('layout-hint').style.display = 'none';
+    saveProfile();
+  }
+  showMenuScreen('menu-main');
+}
+document.getElementById('btn-back-settings').addEventListener('click', exitSettingsScreen);
+document.getElementById('btn-back-settings').addEventListener('touchend', e => { e.preventDefault(); exitSettingsScreen(); });
+
+const volumeSlider = document.getElementById('volume-slider');
+volumeSlider.addEventListener('input', () => {
+  const pct = parseInt(volumeSlider.value, 10);
+  settings.masterVolume = pct / 100;
+  document.getElementById('volume-value').textContent = pct + '%';
+});
+volumeSlider.addEventListener('change', () => { saveProfile(); });
+
+// Control layout editing
+const btnEditLayout = document.getElementById('btn-edit-layout');
+function toggleLayoutEditing() {
+  if (!editModeActive) {
+    enableLayoutEditing();
+    btnEditLayout.textContent = 'DONE';
+    document.getElementById('layout-hint').style.display = 'block';
+  } else {
+    disableLayoutEditing();
+    btnEditLayout.textContent = 'EDIT LAYOUT';
+    document.getElementById('layout-hint').style.display = 'none';
+    saveProfile();
+  }
+}
+btnEditLayout.addEventListener('click', toggleLayoutEditing);
+btnEditLayout.addEventListener('touchend', e => { e.preventDefault(); toggleLayoutEditing(); });
+
+// The in-HUD exit button is the guaranteed way out of edit mode — it lives
+// inside #tc's own stacking context so it's never covered by the overlay
+// buttons it's meant to substitute for.
+const tcEditExit = document.getElementById('tc-edit-exit');
+tcEditExit.addEventListener('click', toggleLayoutEditing);
+tcEditExit.addEventListener('touchend', e => { e.preventDefault(); toggleLayoutEditing(); });
+
+// Resize panel +/- buttons — the reliable alternative to pinch/scroll
+const tcResizeMinus = document.getElementById('tc-resize-minus');
+const tcResizePlus  = document.getElementById('tc-resize-plus');
+tcResizeMinus.addEventListener('click', () => nudgeSelectedScale(-0.1));
+tcResizeMinus.addEventListener('touchend', e => { e.preventDefault(); nudgeSelectedScale(-0.1); });
+tcResizePlus.addEventListener('click', () => nudgeSelectedScale(0.1));
+tcResizePlus.addEventListener('touchend', e => { e.preventDefault(); nudgeSelectedScale(0.1); });
+
+document.getElementById('btn-reset-layout').addEventListener('click', () => { resetControlLayout(); saveProfile(); });
+document.getElementById('btn-reset-layout').addEventListener('touchend', e => { e.preventDefault(); resetControlLayout(); saveProfile(); });
+
 // Upgrade buy buttons
 ['engine','armor','nitro','handling'].forEach(type => {
   const btn = document.getElementById('btn-buy-' + type);
@@ -6392,6 +6904,20 @@ document.getElementById('track-card-5').addEventListener('click', () => selectTr
 document.getElementById('track-card-6').addEventListener('click', () => selectTrack(6));
 document.getElementById('track-card-7').addEventListener('click', () => selectTrack(7));
 document.getElementById('track-card-8').addEventListener('click', () => selectTrack(8));
+
+// Per-card ▶ play buttons — select the track and jump straight into the
+// race, skipping the need to scroll down to a separate START RACE button.
+for (let i = 0; i < 9; i++) {
+  const playBtn = document.getElementById('track-play-' + i);
+  const startFromCard = (e) => {
+    e.stopPropagation();
+    if (isTrackLocked(i)) return; // defense in depth — button is hidden via CSS when locked anyway
+    selectTrack(i);
+    startGame();
+  };
+  playBtn.addEventListener('click', startFromCard);
+  playBtn.addEventListener('touchend', e => { e.preventDefault(); startFromCard(e); });
+}
 
 // After race: return to track select screen
 document.getElementById('btn-track-select').addEventListener('click', () => {
@@ -6430,22 +6956,14 @@ document.getElementById('btn-champ-again').addEventListener('touchend', e => {
 // MAIN MENU
 document.getElementById('btn-champ-menu').addEventListener('click', () => {
   document.getElementById('ov-championship').style.display = 'none';
-  if (championship.seriesIdx === 2) {
-    showGameCompleteScreen();
-  } else {
-    showMenuScreen('menu-main');
-    document.getElementById('ov-start').style.display = 'flex';
-  }
+  showMenuScreen('menu-main');
+  document.getElementById('ov-start').style.display = 'flex';
 });
 document.getElementById('btn-champ-menu').addEventListener('touchend', e => {
   e.preventDefault();
   document.getElementById('ov-championship').style.display = 'none';
-  if (championship.seriesIdx === 2) {
-    showGameCompleteScreen();
-  } else {
-    showMenuScreen('menu-main');
-    document.getElementById('ov-start').style.display = 'flex';
-  }
+  showMenuScreen('menu-main');
+  document.getElementById('ov-start').style.display = 'flex';
 });
 
 function showGameCompleteScreen() {
@@ -6456,14 +6974,12 @@ function showGameCompleteScreen() {
 }
 document.getElementById('btn-game-complete-continue').addEventListener('click', () => {
   document.getElementById('ov-game-complete').style.display = 'none';
-  showMenuScreen('menu-main');
-  document.getElementById('ov-start').style.display = 'flex';
+  document.getElementById('ov-championship').style.display = 'flex';
 });
 document.getElementById('btn-game-complete-continue').addEventListener('touchend', e => {
   e.preventDefault();
   document.getElementById('ov-game-complete').style.display = 'none';
-  showMenuScreen('menu-main');
-  document.getElementById('ov-start').style.display = 'flex';
+  document.getElementById('ov-championship').style.display = 'flex';
 });
 
 // Championship intro screen — START/BACK. Reads the series index that was
@@ -6491,6 +7007,7 @@ updateTrackUI();
 // Buttons
 ['btn-start','btn-restart'].forEach(id => {
   const el = document.getElementById(id);
+  if (!el) return; // btn-start is currently commented out in favor of per-card play icons
   el.addEventListener('click', startGame);
   el.addEventListener('touchend', e => { e.preventDefault(); startGame(); });
 });
@@ -6532,6 +7049,7 @@ document.getElementById('btn-reset-confirm').addEventListener('click', () => {
 });
 
 loadProfile();
+applyControlLayout();
 updateTrackUI();
 refreshGarageUI();
 
