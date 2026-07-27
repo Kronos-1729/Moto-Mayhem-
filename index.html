@@ -845,10 +845,18 @@ canvas{display:block;width:100%;height:100%;}
       <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:20px;">
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Rajdhani','Inter',sans-serif;">🔊 VOLUME</span>
-            <span id="volume-value" style="color:#9ca3af;font-size:11px;font-family:'Rajdhani','Inter',sans-serif;">100%</span>
+            <span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Rajdhani','Inter',sans-serif;">🔊 GAME VOLUME</span>
+            <span id="sfx-volume-value" style="color:#9ca3af;font-size:11px;font-family:'Rajdhani','Inter',sans-serif;">100%</span>
           </div>
-          <input type="range" id="volume-slider" min="0" max="100" value="100" style="width:100%;accent-color:#ff5e3a;">
+          <input type="range" id="sfx-volume-slider" min="0" max="100" value="100" style="width:100%;accent-color:#ff5e3a;">
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Rajdhani','Inter',sans-serif;">🎵 MUSIC VOLUME</span>
+            <span id="music-volume-value" style="color:#9ca3af;font-size:11px;font-family:'Rajdhani','Inter',sans-serif;">100%</span>
+          </div>
+          <input type="range" id="music-volume-slider" min="0" max="100" value="100" style="width:100%;accent-color:#ff5e3a;">
         </div>
 
         <div>
@@ -1007,7 +1015,7 @@ function tone(freq, type, dur, vol = 0.25, freqEnd) {
     o.type = type;
     o.frequency.setValueAtTime(freq, ctx.currentTime);
     if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, ctx.currentTime + dur);
-    const outVol = vol * (typeof settings !== 'undefined' ? settings.masterVolume : 1);
+    const outVol = vol * (typeof settings !== 'undefined' ? settings.sfxVolume : 1);
     g.gain.setValueAtTime(outVol, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
     o.start(); o.stop(ctx.currentTime + dur);
@@ -1045,7 +1053,7 @@ function updateEngine(speed, maxSpeed) {
     const t = speed / maxSpeed;
     const freq = 55 + t * 160 + (Math.random() - 0.5) * 4;
     _engineNode.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
-    const targetGain = speed > 2 ? (0.06 + t * 0.06) * settings.masterVolume : 0;
+    const targetGain = speed > 2 ? (0.06 + t * 0.06) * settings.sfxVolume : 0;
     _engineGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.05);
   } catch(e) {}
 }
@@ -1080,7 +1088,7 @@ function clearMusicFade() {
 function startMusic() {
   clearMusicFade();
   musicEl.currentTime = 0;
-  musicEl.volume = MUSIC_BASE_GAIN * settings.masterVolume;
+  musicEl.volume = MUSIC_BASE_GAIN * settings.musicVolume;
   musicEl.play().catch(() => {}); // ignore autoplay-policy rejections defensively
 }
 
@@ -1975,7 +1983,8 @@ const playerUpgrades = { engine: 0, armor: 0, nitro: 0, handling: 0 }; // 0-5 ea
 // Player-adjustable settings — persists across races and sessions, separate
 // from G since G is fully rebuilt on every initGame() call.
 const settings = {
-  masterVolume: 1.0, // 0 (muted) to 1 (full volume)
+  sfxVolume: 1.0,   // 0 (muted) to 1 (full) — engine, punches/kicks, crashes, countdown, etc.
+  musicVolume: 1.0, // 0 (muted) to 1 (full) — background music only
 };
 
 // Per-tier upgrade costs (credits). Index 0 = cost of tier 1, ... index 4 = cost of tier 5.
@@ -2051,7 +2060,15 @@ function loadProfile() {
     if (typeof p.gauntletUnlocked === 'boolean') gauntletUnlocked = p.gauntletUnlocked;
     if (p.seriesCompletionAwarded) Object.assign(seriesCompletionAwarded, p.seriesCompletionAwarded);
     if (p.championshipIntroSeen) Object.assign(championshipIntroSeen, p.championshipIntroSeen);
-    if (p.settings && typeof p.settings.masterVolume === 'number') settings.masterVolume = p.settings.masterVolume;
+    if (p.settings) {
+      // New format: independent sliders. Old format (pre-split): a single
+      // masterVolume applied to both — migrate it to both sliders so
+      // existing players' preference carries over instead of resetting.
+      if (typeof p.settings.sfxVolume === 'number') settings.sfxVolume = p.settings.sfxVolume;
+      else if (typeof p.settings.masterVolume === 'number') settings.sfxVolume = p.settings.masterVolume;
+      if (typeof p.settings.musicVolume === 'number') settings.musicVolume = p.settings.musicVolume;
+      else if (typeof p.settings.masterVolume === 'number') settings.musicVolume = p.settings.masterVolume;
+    }
     if (p.controlLayout) {
       for (const id of Object.keys(p.controlLayout)) controlLayout[id] = p.controlLayout[id];
       applyControlLayout();
@@ -2071,7 +2088,8 @@ function resetProfile() {
   gauntletUnlocked = false;
   Object.assign(seriesCompletionAwarded, { 0:false, 1:false, 2:false });
   Object.assign(championshipIntroSeen, { 0:false, 1:false, 2:false });
-  settings.masterVolume = 1.0;
+  settings.sfxVolume = 1.0;
+  settings.musicVolume = 1.0;
   resetControlLayout();
   touchSlotMeta(activeSlot);
   updateTrackUI();
@@ -2093,7 +2111,8 @@ function clearInMemoryProfileState() {
   gauntletUnlocked = false;
   Object.assign(seriesCompletionAwarded, { 0:false, 1:false, 2:false });
   Object.assign(championshipIntroSeen, { 0:false, 1:false, 2:false });
-  settings.masterVolume = 1.0;
+  settings.sfxVolume = 1.0;
+  settings.musicVolume = 1.0;
   for (const id of Object.keys(controlLayout)) delete controlLayout[id];
 }
 
@@ -7211,9 +7230,12 @@ document.getElementById('btn-back-garage').addEventListener('touchend', e => { e
 
 // Settings navigation
 function refreshSettingsUI() {
-  const pct = Math.round(settings.masterVolume * 100);
-  document.getElementById('volume-slider').value = pct;
-  document.getElementById('volume-value').textContent = pct + '%';
+  const sfxPct = Math.round(settings.sfxVolume * 100);
+  document.getElementById('sfx-volume-slider').value = sfxPct;
+  document.getElementById('sfx-volume-value').textContent = sfxPct + '%';
+  const musicPct = Math.round(settings.musicVolume * 100);
+  document.getElementById('music-volume-slider').value = musicPct;
+  document.getElementById('music-volume-value').textContent = musicPct + '%';
 }
 document.getElementById('btn-settings-open').addEventListener('click', () => { refreshSettingsUI(); showMenuScreen('menu-settings'); });
 document.getElementById('btn-settings-open').addEventListener('touchend', e => { e.preventDefault(); refreshSettingsUI(); showMenuScreen('menu-settings'); });
@@ -7229,14 +7251,22 @@ function exitSettingsScreen() {
 document.getElementById('btn-back-settings').addEventListener('click', exitSettingsScreen);
 document.getElementById('btn-back-settings').addEventListener('touchend', e => { e.preventDefault(); exitSettingsScreen(); });
 
-const volumeSlider = document.getElementById('volume-slider');
-volumeSlider.addEventListener('input', () => {
-  const pct = parseInt(volumeSlider.value, 10);
-  settings.masterVolume = pct / 100;
-  document.getElementById('volume-value').textContent = pct + '%';
-  if (!musicEl.paused) musicEl.volume = MUSIC_BASE_GAIN * settings.masterVolume;
+const sfxVolumeSlider = document.getElementById('sfx-volume-slider');
+sfxVolumeSlider.addEventListener('input', () => {
+  const pct = parseInt(sfxVolumeSlider.value, 10);
+  settings.sfxVolume = pct / 100;
+  document.getElementById('sfx-volume-value').textContent = pct + '%';
 });
-volumeSlider.addEventListener('change', () => { saveProfile(); });
+sfxVolumeSlider.addEventListener('change', () => { saveProfile(); });
+
+const musicVolumeSlider = document.getElementById('music-volume-slider');
+musicVolumeSlider.addEventListener('input', () => {
+  const pct = parseInt(musicVolumeSlider.value, 10);
+  settings.musicVolume = pct / 100;
+  document.getElementById('music-volume-value').textContent = pct + '%';
+  if (!musicEl.paused) musicEl.volume = MUSIC_BASE_GAIN * settings.musicVolume;
+});
+musicVolumeSlider.addEventListener('change', () => { saveProfile(); });
 
 // Control layout editing
 const btnEditLayout = document.getElementById('btn-edit-layout');
