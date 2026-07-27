@@ -5612,7 +5612,7 @@ function updatePlayer(dt) {
   if (p.comboTimer > 0) p.comboTimer--;
   else p.combo = 0;
 
-  updateEngine(p.speed, MAX_SPD);
+  updateEngine(p.speed, G.effectiveMaxSpd);
 }
 
 function updateRivals(dt) {
