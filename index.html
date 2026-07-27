@@ -1119,6 +1119,18 @@ function restartMusic() {
   startMusic();
 }
 
+// Re-applies settings.musicVolume to the actual <audio> element without
+// restarting playback. Needed anywhere settings.musicVolume changes in
+// memory (profile switch, reset, delete) but the track is already
+// mid-playback — startMusic()/restartMusic() would otherwise be the only
+// code path that ever reads settings.musicVolume into musicEl.volume,
+// leaving the audible volume stuck at its old value until the player
+// happens to touch the slider themselves.
+function syncMusicVolume() {
+  clearMusicFade(); // an in-progress fade-out would otherwise immediately overwrite this
+  musicEl.volume = MUSIC_BASE_GAIN * settings.musicVolume;
+}
+
 function sfx(type) {
   switch(type) {
     case 'punch': tone(100,'square',.08,.25); tone(180,'triangle',.12,.15); break;
@@ -2090,6 +2102,7 @@ function resetProfile() {
   Object.assign(championshipIntroSeen, { 0:false, 1:false, 2:false });
   settings.sfxVolume = 1.0;
   settings.musicVolume = 1.0;
+  syncMusicVolume();
   resetControlLayout();
   touchSlotMeta(activeSlot);
   updateTrackUI();
@@ -2129,6 +2142,7 @@ function switchToProfileSlot(slot) {
   updateTrackUI();
   refreshGarageUI();
   updateProfileUI();
+  syncMusicVolume();
 }
 
 // Permanently deletes a slot's save data and metadata. If the deleted slot
@@ -2273,7 +2287,10 @@ function confirmDeleteProfileSlot() {
   deleteProfileSlot(slot);
   // If the deleted slot was the currently active one, fall back to
   // in-memory defaults so nothing stale lingers in this session.
-  if (slot === activeSlot) clearInMemoryProfileState();
+  if (slot === activeSlot) {
+    clearInMemoryProfileState();
+    syncMusicVolume();
+  }
 
   const meta = loadSlotMeta();
   const remaining = Object.keys(meta).filter(k => meta[k]);
@@ -7504,8 +7521,8 @@ function dismissSplash() {
   splashDismissed = true;
   document.getElementById('ov-splash').style.display = 'none';
   document.getElementById('ov-start').style.display = 'flex';
-  startMusic();
   initProfileSystem();
+  startMusic();
 }
 document.getElementById('ov-splash').addEventListener('click', dismissSplash);
 document.getElementById('ov-splash').addEventListener('touchend', e => { e.preventDefault(); dismissSplash(); });
