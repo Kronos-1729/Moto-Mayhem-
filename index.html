@@ -530,6 +530,7 @@ canvas{display:block;width:100%;height:100%;}
 #rotate-prompt .msg{font-size:20px;font-weight:700;letter-spacing:.5px;}
 #rotate-prompt .sub{font-size:13px;color:rgba(255,255,255,.55);max-width:280px;line-height:1.5;}
 @keyframes rotatehint{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
+@keyframes splashPulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 @media (orientation:portrait){
   #rotate-prompt{display:flex;}
   #wrap{display:none;}
@@ -547,6 +548,15 @@ canvas{display:block;width:100%;height:100%;}
   <canvas id="c" width="900" height="506"></canvas>
   <div id="sl"></div>
   <div id="vig"></div>
+
+  <!-- Splash / title screen — shown before anything else so the player's
+       first tap can satisfy the browser's audio autoplay gesture
+       requirement, then hands off to whichever boot screen normally
+       comes next (profile picker, rider naming, or straight to menu). -->
+  <div class="ov" id="ov-splash" style="cursor:pointer;">
+    <h1>MOTO MAYHEM</h1>
+    <div id="splash-tap-hint" style="margin-top:10px;color:#9aa0ac;font-size:12px;font-weight:700;letter-spacing:3px;font-family:'Rajdhani','Inter',sans-serif;text-transform:uppercase;animation:splashPulse 1.6s ease-in-out infinite;">TAP TO START</div>
+  </div>
 
   <!-- HUD -->
   <div id="hud">
@@ -1044,6 +1054,61 @@ function stopEngine() {
   if (_engineGain) {
     try { _engineGain.gain.setTargetAtTime(0, ac().currentTime, 0.1); } catch(e) {}
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// BACKGROUND MUSIC
+// ════════════════════════════════════════════════════════════
+// Base music level relative to SFX/engine gain — sits underneath them
+// rather than competing, then scaled by the user's master volume on top.
+const MUSIC_BASE_GAIN = 0.35;
+const MUSIC_FADE_SEC = 0.25;
+
+const musicEl = new Audio('music.mp3');
+musicEl.loop = true;
+musicEl.preload = 'auto';
+
+let musicFadeInterval = null;
+function clearMusicFade() {
+  if (musicFadeInterval) { clearInterval(musicFadeInterval); musicFadeInterval = null; }
+}
+
+// Always starts from the beginning of the track — used both for the very
+// first play (triggered by the splash screen's tap, the earliest legal
+// moment for audio per browser autoplay rules) and whenever the player
+// returns to menu-land after a race/championship.
+function startMusic() {
+  clearMusicFade();
+  musicEl.currentTime = 0;
+  musicEl.volume = MUSIC_BASE_GAIN * settings.masterVolume;
+  musicEl.play().catch(() => {}); // ignore autoplay-policy rejections defensively
+}
+
+// Fades out over MUSIC_FADE_SEC rather than cutting abruptly.
+function stopMusic() {
+  if (musicEl.paused) return;
+  clearMusicFade();
+  const steps = 15;
+  const stepMs = (MUSIC_FADE_SEC * 1000) / steps;
+  const startVol = musicEl.volume;
+  let i = 0;
+  musicFadeInterval = setInterval(() => {
+    i++;
+    musicEl.volume = Math.max(0, startVol * (1 - i / steps));
+    if (i >= steps) {
+      clearMusicFade();
+      musicEl.pause();
+    }
+  }, stepMs);
+}
+
+// Explicit-intent alias for "return to menu, play from the top" call
+// sites — functionally identical to startMusic() (which always resets to
+// 0 anyway), but keeps the call sites' meaning clear.
+function restartMusic() {
+  clearMusicFade();
+  musicEl.pause();
+  startMusic();
 }
 
 function sfx(type) {
@@ -6355,6 +6420,7 @@ function gameLoop(ts) {
 // ════════════════════════════════════════════════════════════
 function startGame() {
   try { ac().resume(); } catch(e) {}
+  stopMusic();
   // Safety net: guarantee edit mode is off and the HUD is back to normal
   // gameplay state, in case Settings was left mid-edit via an unusual path.
   editModeActive = false;
@@ -6543,6 +6609,7 @@ function endGame(win) {
     document.getElementById('btn-champ-next').style.display   = 'none';
     document.getElementById('btn-champ-results').style.display = 'none';
     document.getElementById('ov-champ-pts').style.display     = 'none';
+    restartMusic();
   }
 
   // Visual punctuation on race end
@@ -6612,6 +6679,7 @@ function exitToMenu() {
   showMenuScreen('menu-main');
   updateTrackUI();
   document.getElementById('ov-start').style.display = 'flex';
+  restartMusic();
 }
 
 document.getElementById('btn-exit').addEventListener('click', pauseGame);
@@ -6811,6 +6879,7 @@ function showChampionshipResults() {
   // button is responsible for revealing this already-populated results
   // screen afterward.
   document.getElementById('ov-over').style.display = 'none';
+  restartMusic();
   if (s.seriesIdx === 2 && s.fullClear && s.totalPoints >= 30) {
     showGameCompleteScreen();
   } else {
@@ -7165,6 +7234,7 @@ volumeSlider.addEventListener('input', () => {
   const pct = parseInt(volumeSlider.value, 10);
   settings.masterVolume = pct / 100;
   document.getElementById('volume-value').textContent = pct + '%';
+  if (!musicEl.paused) musicEl.volume = MUSIC_BASE_GAIN * settings.masterVolume;
 });
 volumeSlider.addEventListener('change', () => { saveProfile(); });
 
@@ -7391,7 +7461,24 @@ document.getElementById('btn-profile-delete-cancel').addEventListener('touchend'
   document.getElementById('ov-profile-delete').style.display = 'none';
 });
 
-initProfileSystem();
+// Splash screen gate: the game's real boot sequence (profile picker /
+// rider naming / straight into the menu) only begins after this first
+// tap, since that's also the earliest moment any audio is legally
+// allowed to start per browser autoplay policy.
+document.getElementById('ov-start').style.display = 'none';
+let splashDismissed = false;
+function dismissSplash() {
+  if (splashDismissed) return; // touchend + the synthesized click that
+                                // follows it on mobile would otherwise
+                                // both fire this
+  splashDismissed = true;
+  document.getElementById('ov-splash').style.display = 'none';
+  document.getElementById('ov-start').style.display = 'flex';
+  startMusic();
+  initProfileSystem();
+}
+document.getElementById('ov-splash').addEventListener('click', dismissSplash);
+document.getElementById('ov-splash').addEventListener('touchend', e => { e.preventDefault(); dismissSplash(); });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
