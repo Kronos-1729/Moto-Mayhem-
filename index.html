@@ -1007,6 +1007,17 @@ function ac() {
   return _ac;
 }
 
+// Converts a linear 0–1 slider fraction into a perceptually-even gain
+// value. Human hearing perceives loudness logarithmically, so a straight
+// linear multiply (gain = fraction) makes the top half of the slider
+// (100%→50%) sound almost unchanged while all the audible drop-off is
+// crammed into the bottom half. Squaring the fraction approximates the
+// standard "audio taper" curve used for volume controls, so the halfway
+// mark actually sounds roughly half as loud.
+function volumeCurve(fraction) {
+  return fraction * fraction;
+}
+
 function tone(freq, type, dur, vol = 0.25, freqEnd) {
   try {
     const ctx = ac();
@@ -1015,7 +1026,7 @@ function tone(freq, type, dur, vol = 0.25, freqEnd) {
     o.type = type;
     o.frequency.setValueAtTime(freq, ctx.currentTime);
     if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, ctx.currentTime + dur);
-    const outVol = vol * (typeof settings !== 'undefined' ? settings.sfxVolume : 1);
+    const outVol = vol * (typeof settings !== 'undefined' ? volumeCurve(settings.sfxVolume) : 1);
     g.gain.setValueAtTime(outVol, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
     o.start(); o.stop(ctx.currentTime + dur);
@@ -1053,7 +1064,7 @@ function updateEngine(speed, maxSpeed) {
     const t = speed / maxSpeed;
     const freq = 55 + t * 160 + (Math.random() - 0.5) * 4;
     _engineNode.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
-    const targetGain = speed > 2 ? (0.06 + t * 0.06) * settings.sfxVolume : 0;
+    const targetGain = speed > 2 ? (0.06 + t * 0.06) * volumeCurve(settings.sfxVolume) : 0;
     _engineGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.05);
   } catch(e) {}
 }
@@ -1081,6 +1092,13 @@ function clearMusicFade() {
   if (musicFadeInterval) { clearInterval(musicFadeInterval); musicFadeInterval = null; }
 }
 
+// The actual target volume for the <audio> element given the current
+// settings — factored out so every call site stays in sync if the curve
+// or base gain ever changes again.
+function musicTargetVolume() {
+  return MUSIC_BASE_GAIN * volumeCurve(settings.musicVolume);
+}
+
 // Always starts from the beginning of the track — used both for the very
 // first play (triggered by the splash screen's tap, the earliest legal
 // moment for audio per browser autoplay rules) and whenever the player
@@ -1088,7 +1106,7 @@ function clearMusicFade() {
 function startMusic() {
   clearMusicFade();
   musicEl.currentTime = 0;
-  musicEl.volume = MUSIC_BASE_GAIN * settings.musicVolume;
+  musicEl.volume = musicTargetVolume();
   musicEl.play().catch(() => {}); // ignore autoplay-policy rejections defensively
 }
 
@@ -1128,7 +1146,7 @@ function restartMusic() {
 // happens to touch the slider themselves.
 function syncMusicVolume() {
   clearMusicFade(); // an in-progress fade-out would otherwise immediately overwrite this
-  musicEl.volume = MUSIC_BASE_GAIN * settings.musicVolume;
+  musicEl.volume = musicTargetVolume();
 }
 
 function sfx(type) {
@@ -7281,7 +7299,7 @@ musicVolumeSlider.addEventListener('input', () => {
   const pct = parseInt(musicVolumeSlider.value, 10);
   settings.musicVolume = pct / 100;
   document.getElementById('music-volume-value').textContent = pct + '%';
-  if (!musicEl.paused) musicEl.volume = MUSIC_BASE_GAIN * settings.musicVolume;
+  if (!musicEl.paused) syncMusicVolume();
 });
 musicVolumeSlider.addEventListener('change', () => { saveProfile(); });
 
