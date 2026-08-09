@@ -1624,7 +1624,7 @@ armR.add(chain);
 // elbows/knees), not zero — see the comment on that loop above.
 for(const j of[armL,armR,armL.foreArm,armR.foreArm,legL,legR,legL.shin,legR.shin])
 {j.restX=j.rotation.x;j.restY=j.rotation.y;j.restZ=j.rotation.z}
-return{root,body,rw,fw,armL,armR,legL,legR,tail,flame,chain}}
+return{root,body,rw,fw,armL,armR,legL,legR,tail,flame,chain,riderClone:clone}}
 
 function buildBike(pal){
 if(riderTemplate){
@@ -1632,6 +1632,30 @@ try{
 const result=buildBikeFromGLB(pal);
 diagLine('buildBikeFromGLB OK. armR='+!!result.armR+' armL='+!!result.armL+' legR='+!!result.legR+' legL='+!!result.legL
 +' armR.foreArm='+!!(result.armR&&result.armR.foreArm)+' legR.shin='+!!(result.legR&&result.legR.shin));
+if(!window.__riderDiagDone){window.__riderDiagDone=true;
+const clone=result.riderClone;
+if(clone){
+clone.updateMatrixWorld(true);
+const box=new THREE.Box3().setFromObject(clone);
+diagLine('Rider world bbox min=('+box.min.x.toFixed(3)+','+box.min.y.toFixed(3)+','+box.min.z.toFixed(3)+')');
+diagLine('Rider world bbox max=('+box.max.x.toFixed(3)+','+box.max.y.toFixed(3)+','+box.max.z.toFixed(3)+')');
+const size=new THREE.Vector3();box.getSize(size);
+diagLine('Rider bbox size=('+size.x.toFixed(3)+','+size.y.toFixed(3)+','+size.z.toFixed(3)+')');
+let skinnedCount=0,totalVerts=0,firstSkeletonBones=-1;
+clone.traverse(o=>{if(o.isSkinnedMesh){skinnedCount++;
+if(firstSkeletonBones<0&&o.skeleton)firstSkeletonBones=o.skeleton.bones.length;
+if(o.geometry&&o.geometry.attributes.position)totalVerts+=o.geometry.attributes.position.count}});
+diagLine('SkinnedMesh count='+skinnedCount+' totalVerts='+totalVerts+' skeleton.bones.length='+firstSkeletonBones);
+// Unmissable canary — plain unskinned MeshBasicMaterial sphere parented
+// to the clone at local (0,1,0). If THIS is also invisible, the bug is
+// in the clone's own transform/parenting chain (scale/position/rotation
+// or where it got added), not in skinning/materials specifically. If
+// the canary IS visible but the rider mesh isn't, the problem is
+// isolated to the skinned geometry/material path.
+const canary=new THREE.Mesh(new THREE.SphereGeometry(.3,8,6),new THREE.MeshBasicMaterial({color:0xff00ff}));
+canary.position.set(0,1,0);canary.renderOrder=999;clone.add(canary);
+diagLine('Canary sphere added at clone-local (0,1,0) — magenta ball. Visible = clone transform chain OK, problem is skin/material specific. Not visible = clone itself is mispositioned/unparented.');
+}else{diagLine('No riderClone reference returned — cannot bbox-check')}}
 return result;
 }catch(e){diagLine('buildBikeFromGLB THREW: '+e.message);riderTemplate=null}
 }
