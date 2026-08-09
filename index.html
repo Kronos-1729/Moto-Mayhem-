@@ -31,12 +31,13 @@ canvas.gl{display:block;width:900px;height:506px}
 #sl{position:absolute;inset:0;pointer-events:none;z-index:6;background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px)}
 #vig{position:absolute;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 65%,rgba(0,0,0,.65) 100%)}
 #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:8px 14px 14px;background:linear-gradient(to bottom,rgba(10,11,14,.85) 0%,transparent 100%);pointer-events:none;z-index:10;font-family:'Rajdhani','Inter',sans-serif}
-.hb{display:flex;flex-direction:column;gap:3px;min-width:70px}
-.hl{color:rgba(255,255,255,.45);font-size:9px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
-.hv{color:#fff;font-size:15px;font-weight:700;letter-spacing:.5px}
-.bar-w{width:88px;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
-#hp-bar{height:100%;width:100%;background:linear-gradient(90deg,#34d399,#22b87a);border-radius:3px}
-#nitro-bar{height:100%;width:100%;background:linear-gradient(90deg,#3aa8ff,#5ec8ff)}
+.hb{display:flex;flex-direction:column;gap:3px;min-width:70px;background:rgba(12,13,17,.58);border:1px solid rgba(255,255,255,.09);border-left:3px solid var(--hb-accent,rgba(255,255,255,.3));border-radius:4px;padding:4px 9px 5px}
+.hl{color:rgba(255,255,255,.5);font-size:8.5px;text-transform:uppercase;letter-spacing:1.6px;font-weight:700}
+.hv{color:#fff;font-size:15px;font-weight:700;letter-spacing:.4px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.bar-w{width:88px;height:7px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.05)}
+#hp-bar{height:100%;width:100%;background:linear-gradient(90deg,#1fae7a,#34d399);border-radius:3px;box-shadow:0 0 6px rgba(52,211,153,.65);transition:width .15s ease-out}
+#nitro-bar{height:100%;width:100%;background:linear-gradient(90deg,#2b86d9,#5ec8ff);border-radius:3px;box-shadow:0 0 6px rgba(94,200,255,.65);transition:width .15s ease-out}
+.hb-hp{--hb-accent:#34d399}.hb-nitro{--hb-accent:#5ec8ff}.hb-spd{--hb-accent:#5ec8ff}.hb-dst{--hb-accent:#fbbf24}.hb-ko{--hb-accent:#fb7185}.hb-near{--hb-accent:#5eead4}.hb-pos{--hb-accent:#ff8a5c}
 #wave-banner{position:absolute;top:78px;left:50%;transform:translateX(-50%);background:rgba(15,17,22,.85);border:1px solid rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:600;letter-spacing:2px;padding:6px 20px;border-radius:5px;font-family:'Rajdhani','Inter',sans-serif;border-left:3px solid #ff5e3a;pointer-events:none;z-index:12;opacity:0;transition:opacity .3s}
 #wave-banner.show{opacity:1}
 #weapon-badge{position:absolute;top:46px;left:50%;transform:translateX(-50%);background:rgba(15,17,22,.85);border:1px solid rgba(255,255,255,.1);color:#fbbf24;font-size:11px;font-weight:600;padding:4px 14px;border-radius:5px;letter-spacing:1px;font-family:'Rajdhani','Inter',sans-serif;pointer-events:none;z-index:12;display:none}
@@ -46,9 +47,11 @@ canvas.gl{display:block;width:900px;height:506px}
 #countdown span{font-size:120px;font-weight:700;letter-spacing:4px;font-family:'Rajdhani','Inter',sans-serif;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6);animation:cdpop .7s cubic-bezier(.2,1.4,.4,1) both}
 #countdown span.go{color:#ff5e3a}
 @keyframes cdpop{0%{transform:scale(.3);opacity:0}35%{transform:scale(1.15);opacity:1}60%{transform:scale(1);opacity:1}100%{transform:scale(1);opacity:0}}
-#btn-exit{position:absolute;top:46px;right:10px;background:rgba(10,11,14,.55);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.75);font-family:'Rajdhani','Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;padding:5px 11px;border-radius:5px;cursor:pointer;z-index:20;text-transform:uppercase}
+#btn-exit{position:absolute;top:58px;right:10px;background:rgba(10,11,14,.55);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.75);font-family:'Rajdhani','Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;padding:5px 11px;border-radius:5px;cursor:pointer;z-index:20;text-transform:uppercase}
 #btn-exit.hidden{display:none}
 .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;text-align:center;padding:20px;z-index:40;overflow-y:auto;background:linear-gradient(160deg,rgba(22,24,31,.96) 0%,rgba(8,9,13,.98) 100%);font-family:'Inter',-apple-system,'Segoe UI',sans-serif}
+.btn-back{background:none;border:none;color:#6b7280;font-family:'Rajdhani','Inter',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;padding:6px 10px;margin-bottom:10px;align-self:flex-start;transition:color .15s}
+.btn-back:hover{color:#fff}
 .ov h1{font-family:'Racing Sans One','Rajdhani','Inter',sans-serif;font-size:clamp(30px,7vw,56px);color:#fff;letter-spacing:4px;line-height:1;text-shadow:3px 3px 0 rgba(0,0,0,.65),0 10px 28px rgba(0,0,0,.55)}
 .ov h1::after{content:'';display:block;width:70px;height:6px;margin:14px auto 18px;background:#ff5e3a;transform:skewX(-24deg)}
 .ov .sub{color:#9aa0ac;font-size:12px;max-width:500px;line-height:1.7;margin-bottom:14px}
@@ -115,7 +118,22 @@ input[type=range]{width:100%;accent-color:#ff5e3a}
 .champ-intro-check input{width:15px;height:15px;accent-color:#ff5e3a}
 #tc{position:absolute;inset:0;pointer-events:none;z-index:20}
 #tc.hidden{display:none}
-.tb{position:absolute;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;pointer-events:auto;touch-action:none;border-radius:50%;font-size:13px;font-family:'Rajdhani','Inter',sans-serif;backdrop-filter:blur(3px)}
+.tb{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;border-radius:50%;font-family:'Racing Sans One','Rajdhani',sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.92);font-size:12px;text-shadow:0 1px 2px rgba(0,0,0,.6);
+background:radial-gradient(circle at 34% 24%,rgba(255,255,255,.14),rgba(255,255,255,0) 42%),linear-gradient(155deg,#2b2e36,#12141a 60%,#0a0b0e);
+border:1px solid rgba(255,255,255,.16);
+box-shadow:0 4px 12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.09),inset 0 -2px 4px rgba(0,0,0,.55);
+transition:transform .08s ease-out,filter .08s ease-out,box-shadow .08s ease-out}
+.tb::before{content:'';position:absolute;inset:3.5px;border-radius:50%;border:1.4px solid var(--tb-accent,rgba(255,255,255,.35));opacity:.5;pointer-events:none;transition:opacity .08s ease-out,box-shadow .08s ease-out}
+.tb::after{content:'';position:absolute;inset:1px;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,transparent 32%);pointer-events:none}
+.tb.pressed{transform:scale(.88);filter:brightness(1.18);
+box-shadow:0 1px 3px rgba(0,0,0,.6),inset 0 2px 5px rgba(0,0,0,.6),inset 0 -1px 2px rgba(0,0,0,.4)}
+.tb.pressed::before{opacity:1;box-shadow:0 0 9px var(--tb-accent,rgba(255,255,255,.5))}
+#tl,#tr{--tb-accent:#c7ccd6;font-size:17px;font-family:'Rajdhani',sans-serif;font-weight:700}
+#tgas{--tb-accent:#34d399}
+#tbrk{--tb-accent:#ff5252}
+#tpunch{--tb-accent:#ff5e3a}
+#tkick{--tb-accent:#c084fc}
+#tnitro{--tb-accent:#3aa8ff}
 /* Control layout editor states — edit mode raises #tc above the settings
 overlay so the game buttons are visible/draggable through it. Exiting
 is handled by a dedicated button rendered inside #tc itself rather than
@@ -155,13 +173,13 @@ font-family:'Rajdhani','Inter',sans-serif;letter-spacing:.5px}
 <canvas id="fx" width="900" height="506"></canvas>
 <div id="sl"></div><div id="vig"></div>
 <div id="hud" style="display:none">
-<div class="hb"><span class="hl">HP</span><div class="bar-w"><div id="hp-bar"></div></div></div>
-<div class="hb"><span class="hl">Nitro</span><div class="bar-w"><div id="nitro-bar"></div></div></div>
-<div class="hb" style="align-items:center"><span class="hl">Speed</span><span id="spd" class="hv" style="color:#5ec8ff">0 mph</span></div>
-<div class="hb" style="align-items:center"><span class="hl">Distance</span><span id="dst" class="hv" style="color:#fbbf24">0 m</span></div>
-<div class="hb" style="align-items:center"><span class="hl">KOs</span><span id="ko" class="hv" style="color:#fb7185">0</span></div>
-<div class="hb" style="align-items:center;min-width:64px"><span class="hl">Nearest</span><span id="nearest" class="hv" style="color:#5eead4">--</span></div>
-<div class="hb" style="align-items:flex-end"><span class="hl">Place</span><span id="pos" class="hv" style="color:#ff8a5c">#1</span></div>
+<div class="hb hb-hp"><span class="hl">HP</span><div class="bar-w"><div id="hp-bar"></div></div></div>
+<div class="hb hb-nitro"><span class="hl">Nitro</span><div class="bar-w"><div id="nitro-bar"></div></div></div>
+<div class="hb hb-spd" style="align-items:center"><span class="hl">Speed</span><span id="spd" class="hv" style="color:#5ec8ff">0 mph</span></div>
+<div class="hb hb-dst" style="align-items:center"><span class="hl">Distance</span><span id="dst" class="hv" style="color:#fbbf24">0 m</span></div>
+<div class="hb hb-ko" style="align-items:center"><span class="hl">KOs</span><span id="ko" class="hv" style="color:#fb7185">0</span></div>
+<div class="hb hb-near" style="align-items:center;min-width:64px"><span class="hl">Nearest</span><span id="nearest" class="hv" style="color:#5eead4">--</span></div>
+<div class="hb hb-pos" style="align-items:flex-end"><span class="hl">Place</span><span id="pos" class="hv" style="color:#ff8a5c">#1</span></div>
 </div>
 <div id="wave-banner">WAVE 1 — FIGHT!</div>
 <div id="weapon-badge">⛓️ CHAIN</div>
@@ -201,6 +219,7 @@ font-family:'Rajdhani','Inter',sans-serif;letter-spacing:.5px}
 <button id="btn-reset-profile" style="background:none;border:none;color:#374151;font-size:9px;font-weight:700;letter-spacing:1.5px;cursor:pointer;padding:4px 8px;text-transform:uppercase">↺ RESET PROFILE</button>
 </div></div></div>
 <div class="ov" id="ov-tracks" style="display:none">
+<button class="btn-back" id="btn-back-main">◀ BACK</button>
 <h1 style="font-size:30px">SELECT TRACK</h1>
 <div style="display:flex;gap:10px;margin-bottom:10px">
 <button class="stab active" id="series-tab-0">🌃 STREET</button>
@@ -215,15 +234,15 @@ font-family:'Rajdhani','Inter',sans-serif;letter-spacing:.5px}
 <div id="track-list" style="width:100%;display:flex;flex-direction:column;align-items:center"></div>
 <p class="sub" id="track-desc" style="max-width:460px"></p>
 <div id="unlock-banner">🔓 COASTAL RUN &amp; MOUNTAIN PASS UNLOCKED!</div>
-<button class="btn secondary small" id="btn-back-main">◀ BACK</button>
 </div>
 <div class="ov" id="ov-garage" style="display:none">
+<button class="btn-back" id="btn-back-garage">◀ BACK</button>
 <h1 style="font-size:30px">GARAGE</h1>
 <div id="garage-cash" style="color:#fbbf24;font-size:18px;font-weight:700;font-family:'Rajdhani','Inter',sans-serif;letter-spacing:2px;margin-bottom:14px"></div>
 <div id="garage-grid" style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:520px"></div>
-<button class="btn secondary small" id="btn-back-garage" style="margin-top:14px">◀ BACK</button>
 </div>
 <div class="ov" id="ov-settings" style="display:none">
+<button class="btn-back" id="btn-back-settings">◀ BACK</button>
 <h1 style="font-size:30px">SETTINGS</h1>
 <div class="setrow"><div class="slabel">🔊 GAME VOLUME <span id="sfx-volume-value">100%</span></div><input type="range" id="sfx-volume-slider" min="0" max="100" value="100"></div>
 <div class="setrow"><div class="slabel">🎵 MUSIC VOLUME <span id="music-volume-value">100%</span></div><input type="range" id="music-volume-slider" min="0" max="100" value="100"></div>
@@ -235,7 +254,6 @@ font-family:'Rajdhani','Inter',sans-serif;letter-spacing:.5px}
 <button class="btn secondary" id="btn-reset-layout" style="flex:1">RESET</button>
 </div>
 </div>
-<button class="btn secondary small" id="btn-back-settings">◀ BACK</button>
 </div>
 <div class="ov" id="ov-profile-select" style="display:none">
 <h1 style="font-size:30px">SELECT RIDER</h1>
@@ -737,6 +755,94 @@ crater.position.set(x,h-8,z);crater.scale.set(craterR*2.6,craterR*1.6,1);world.a
 // a thin rising smoke wisp instead of one big ambient blob
 const smoke=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.glow,color:0x2a2018,transparent:true,opacity:.3,depthWrite:false,fog:false}));
 smoke.position.set(x,h+30,z);smoke.scale.set(h*.35,h*.9,1);world.add(smoke)}}
+/* Coastal scenery — the old build was one palm every ~40m for the full
+   10km with nothing else in the scene at all, so it read as a single
+   loop repeating start to finish. This adds real landmarks (piers,
+   lifeguard towers, a rocky headland), background life (moored boats,
+   animated seagulls), and is paired with a clustered/gapped palm
+   placement (in the coastal branch of buildProps below) instead of
+   uniform spacing. */
+function buildCoastalScenery(track,th){
+if(world.userData.coastalBuilt)return;world.userData.coastalBuilt=true;
+const cr=mulberry32(track.totalDist+271);
+world.userData.gulls=[];
+const deckMat=new THREE.MeshStandardMaterial({color:0x8a6a42,roughness:.95});
+const pilingMat=new THREE.MeshStandardMaterial({color:0x5a4428,roughness:1});
+const postMat=new THREE.MeshStandardMaterial({color:0x6b5335,roughness:.9});
+
+function buildPier(centerD,side){
+const halfW=2.6,steps=10,lat0=RACE_HW+3,lat1=RACE_HW+56;
+const vp=new Float32Array((steps+1)*6),ix=[];
+for(let i=0;i<=steps;i++){const lat=lerp(lat0,lat1,i/steps)*side;
+const p0=new THREE.Vector3(),p1=new THREE.Vector3();
+worldPos(centerD-halfW,lat,p0);worldPos(centerD+halfW,lat,p1);
+vp.set([p0.x,.55,p0.z,p1.x,.55,p1.z],i*6)}
+for(let i=0;i<steps;i++){const a=i*2;ix.push(a,a+2,a+1,a+1,a+2,a+3)}
+const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(vp,3));g.setIndex(ix);g.computeVertexNormals();
+const deck=new THREE.Mesh(g,deckMat);deck.castShadow=true;deck.receiveShadow=true;world.add(deck);
+for(let i=1;i<steps;i+=2){const lat=lerp(lat0,lat1,i/steps)*side,pt=new THREE.Vector3();worldPos(centerD,lat,pt);
+const piling=new THREE.Mesh(new THREE.CylinderGeometry(.22,.26,3.4,7),pilingMat);
+piling.position.set(pt.x,-1.1,pt.z);piling.castShadow=true;world.add(piling)}
+for(let i=0;i<=steps;i+=2)for(const dd of[centerD-halfW,centerD+halfW]){
+const lat=lerp(lat0,lat1,i/steps)*side,pt=new THREE.Vector3();worldPos(dd,lat,pt);
+const post=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.8,5),postMat);
+post.position.set(pt.x,1,pt.z);world.add(post)}}
+
+function buildLifeguardTower(d,side){
+const dist=RACE_HW+8+cr()*4,pt=new THREE.Vector3();const h=worldPos(d,dist*side,pt);
+const g=new THREE.Group();g.position.set(pt.x,0,pt.z);g.rotation.y=h;world.add(g);
+const legMat=new THREE.MeshStandardMaterial({color:0xb8895a,roughness:.9});
+for(const lx of[-.8,.8])for(const lz of[-.8,.8]){
+const leg=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,2.6,6),legMat);leg.position.set(lx,1.3,lz);leg.castShadow=true;g.add(leg)}
+const cabin=new THREE.Mesh(new THREE.BoxGeometry(2,1.5,1.8),new THREE.MeshStandardMaterial({color:0xf4f1ea,roughness:.8}));
+cabin.position.set(0,3.35,0);cabin.castShadow=true;g.add(cabin);
+const roof=new THREE.Mesh(new THREE.ConeGeometry(1.7,.9,4),new THREE.MeshStandardMaterial({color:0xc9432e,roughness:.8}));
+roof.position.set(0,4.55,0);roof.rotation.y=Math.PI/4;g.add(roof);
+const ladder=new THREE.Mesh(new THREE.BoxGeometry(.5,2.6,.08),new THREE.MeshStandardMaterial({color:0x9a6a3e,roughness:.9}));
+ladder.position.set(0,1.3,1);g.add(ladder)}
+
+function buildHeadland(d,side){
+const base=RACE_HW+14,pt=new THREE.Vector3();worldPos(d,base*side,pt);
+for(let i=0;i<11;i++){const dd=d+(cr()-.5)*30,dist=base+cr()*22,sc=1+cr()*2.6;
+const p2=new THREE.Vector3();worldPos(dd,dist*side,p2);
+const rock=new THREE.Mesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshStandardMaterial({color:0x6e6558,roughness:1,flatShading:true}));
+rock.position.set(p2.x,sc*.55,p2.z);rock.scale.setScalar(sc);rock.rotation.set(cr()*3,cr()*3,cr()*3);rock.castShadow=true;world.add(rock)}}
+
+function buildBoat(d,side){
+const dist=RACE_HW+70+cr()*160,pt=new THREE.Vector3();const h=worldPos(d,dist*side,pt);
+const g=new THREE.Group();g.position.set(pt.x,0,pt.z);g.rotation.y=h+(cr()-.5)*1.2;g.rotation.z=(cr()-.5)*.06;
+const hullCol=[0xe8e2d0,0xc9432e,0x2f6f8f,0xf2f2f2][cr()*4|0];
+const hull=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),new THREE.MeshStandardMaterial({color:hullCol,roughness:.6}));
+hull.scale.set(.9,.6,2.6);hull.position.y=.3;hull.castShadow=true;g.add(hull);
+const mast=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,3.4,6),new THREE.MeshStandardMaterial({color:0xd8d0be,roughness:.7}));
+mast.position.set(0,1.9,-.2);g.add(mast);
+const sailGeo=new THREE.BufferGeometry();
+sailGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array([0,1.7,-.2, 0,.3,-.2, 0,.7,1.1]),3));
+sailGeo.setIndex([0,1,2]);sailGeo.computeVertexNormals();
+const sail=new THREE.Mesh(sailGeo,new THREE.MeshStandardMaterial({color:0xf4f1e8,roughness:.9,side:THREE.DoubleSide}));
+g.add(sail);world.add(g)}
+
+function buildGull(d,side){
+const dist=RACE_HW+4+cr()*90,y=3.5+cr()*7,pt=new THREE.Vector3();worldPos(d,dist*side,pt);
+const g=new THREE.Group();g.position.set(pt.x,y,pt.z);g.rotation.y=cr()*TAU;world.add(g);
+const bodyMat=new THREE.MeshStandardMaterial({color:0xf4f4f2,roughness:.7});
+const body=new THREE.Mesh(new THREE.SphereGeometry(.14,6,5),bodyMat);g.add(body);
+function wing(side2){const w=new THREE.Mesh(new THREE.BoxGeometry(.5,.03,.16),bodyMat);w.position.set(side2*.3,0,0);g.add(w);return w}
+const wL=wing(-1),wR=wing(1);
+world.userData.gulls.push({g,wL,wR,baseY:y,phase:cr()*Math.PI*2,speed:.7+cr()*.6})}
+
+// Two piers, staggered sides, roughly a third and two-thirds along
+buildPier(track.totalDist*.32,cr()<.5?1:-1);
+buildPier(track.totalDist*.68,cr()<.5?1:-1);
+// Lifeguard towers scattered through the run
+for(let i=0;i<5;i++)buildLifeguardTower(140+i*(track.totalDist-280)/4+(cr()-.5)*60,cr()<.5?1:-1);
+// A rocky headland breaking the beach at one point
+buildHeadland(track.totalDist*.5,cr()<.5?1:-1);
+// Moored boats out past the shallows
+for(let i=0;i<10;i++)buildBoat(80+cr()*(track.totalDist-160),cr()<.5?1:-1);
+// Seagulls near the coastline
+for(let i=0;i<16;i++)buildGull(cr()*track.totalDist,cr()<.5?1:-1);
+}
 function buildDockApron(track,th){
 const inner=RACE_HW+2.6,outer=inner+26;
 const tex=apronTex();
@@ -821,10 +927,24 @@ inst(new THREE.SphereGeometry(.22,8,6),new THREE.MeshStandardMaterial({color:0xf
 const s=trackSample(i*80+40),side=i%2?1:-1,rx=-Math.cos(s.h),rz=Math.sin(s.h);
 d.position.set(s.x+rx*(RACE_HW+3.7)*side,5.05,s.z+rz*(RACE_HW+3.7)*side);d.rotation.set(0,0,0);d.scale.setScalar(1)},null)}
 else if(t==='coastal'){
-/* REV 10: proper palms — shared placement, trunk + two frond rings + crown */
-const palms=[];for(let i=0;i<count;i++){const s=trackSample(i*40+25),side=i%2?1:-1,dist=11+r()*16;
-const rx=-Math.cos(s.h),rz=Math.sin(s.h);
-palms.push({x:s.x+rx*(RACE_HW+dist)*side,z:s.z+rz*(RACE_HW+dist)*side,rot:r()*TAU,sc:.8+r()*.5,lean:(r()-.5)*.4})}
+/* Clustered palm placement — groves with real gaps between them instead
+   of one palm every ~40m for the full run. Track is walked in zones:
+   each zone is randomly a dense grove, a sparse stretch, or an open gap
+   (no palms at all, leaving clear beach for the landmarks/boats to read
+   against). */
+const palms=[];
+{let dd=20;
+while(dd<track.totalDist-20){
+const roll=r();let zoneLen,spacing;
+if(roll<.28){zoneLen=90+r()*70;spacing=0}
+else if(roll<.6){zoneLen=140+r()*120;spacing=42+r()*22}
+else{zoneLen=150+r()*130;spacing=13+r()*7}
+const zoneEnd=Math.min(track.totalDist-20,dd+zoneLen);
+if(spacing>0)for(let pd=dd;pd<zoneEnd;pd+=spacing){
+const side=r()<.5?1:-1,dist=11+r()*16,pt=new THREE.Vector3();
+worldPos(pd+(r()-.5)*6,(RACE_HW+dist)*side,pt);
+palms.push({x:pt.x,z:pt.z,rot:r()*TAU,sc:.8+r()*.5,lean:(r()-.5)*.4})}
+dd=zoneEnd}}
 /* Continuous beach strip on both sides of the road (built the same way
 as the road itself — a curve-following quad strip) so the palms sit on
 a real stretch of sand instead of each floating on its own separate
@@ -842,28 +962,29 @@ const sandTex=new THREE.CanvasTexture(sc);sandTex.wrapS=sandTex.wrapT=THREE.Repe
 sandTex.repeat.set(3,Math.max(20,Math.floor(track.totalDist/40)));sandTex.anisotropy=renderer.capabilities.getMaxAnisotropy();
 const sandMat=new THREE.MeshStandardMaterial({map:sandTex,roughness:1,side:THREE.DoubleSide});
 for(const side of[1,-1]){const vp=new Float32Array((bN+1)*6),uv=new Float32Array((bN+1)*4),ix=[];
-for(let i=0;i<=bN;i++){const dd=Math.min(track.totalDist,i*bStep),s=trackSample(dd),rx=-Math.cos(s.h),rz=Math.sin(s.h);
+for(let i=0;i<=bN;i++){const dd2=Math.min(track.totalDist,i*bStep),s=trackSample(dd2),rx=-Math.cos(s.h),rz=Math.sin(s.h);
 vp.set([s.x+rx*beachNear*side,.03,s.z+rz*beachNear*side,s.x+rx*beachFar*side,.03,s.z+rz*beachFar*side],i*6);
-const v=dd/12;uv[i*4]=0;uv[i*4+1]=v;uv[i*4+2]=1;uv[i*4+3]=v}
+const v=dd2/12;uv[i*4]=0;uv[i*4+1]=v;uv[i*4+2]=1;uv[i*4+3]=v}
 for(let i=0;i<bN;i++){const a=i*2;ix.push(a,a+2,a+1,a+1,a+2,a+3)}
 const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(vp,3));
 g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();
 world.add(new THREE.Mesh(g,sandMat))}}
-inst(new THREE.CylinderGeometry(.14,.22,5,6),new THREE.MeshStandardMaterial({color:0x8a5a2b,roughness:.9}),count,(i,d)=>{
+inst(new THREE.CylinderGeometry(.14,.22,5,6),new THREE.MeshStandardMaterial({color:0x8a5a2b,roughness:.9}),palms.length,(i,d)=>{
 const p=palms[i];d.position.set(p.x,2.4*p.sc,p.z);d.rotation.set(0,p.rot,p.lean);d.scale.setScalar(p.sc)},null);
 const frondGeo=new THREE.ConeGeometry(1.5,2.8,5);frondGeo.translate(0,1.4,0);frondGeo.rotateX(Math.PI/2+0.55);
 const frondMat=new THREE.MeshStandardMaterial({color:0x2e7d32,roughness:.9,side:THREE.DoubleSide});
-inst(frondGeo,frondMat,count*6,(i,d)=>{
+inst(frondGeo,frondMat,palms.length*6,(i,d)=>{
 const p=palms[Math.floor(i/6)],k=i%6,a=k*TAU/6+p.rot;
 d.position.set(p.x+Math.sin(a)*.6*p.sc,4.7*p.sc,p.z+Math.cos(a)*.6*p.sc);
 d.rotation.set(0,a,0);d.scale.setScalar(p.sc*1.15)},null);
 const frondGeo2=new THREE.ConeGeometry(1.2,2.2,5);frondGeo2.translate(0,1.1,0);frondGeo2.rotateX(Math.PI/2+0.9);
-inst(frondGeo2,frondMat,count*5,(i,d)=>{
+inst(frondGeo2,frondMat,palms.length*5,(i,d)=>{
 const p=palms[Math.floor(i/5)],k=i%5,a=k*TAU/5+p.rot+.5;
 d.position.set(p.x+Math.sin(a)*.4*p.sc,4.3*p.sc,p.z+Math.cos(a)*.4*p.sc);
 d.rotation.set(0,a,0);d.scale.setScalar(p.sc)},null);
-inst(new THREE.SphereGeometry(.5,6,5),new THREE.MeshStandardMaterial({color:0x2e7d32,roughness:.9}),count,(i,d)=>{
-const p=palms[i];d.position.set(p.x,4.8*p.sc,p.z);d.rotation.set(0,0,0);d.scale.set(p.sc*1.2,p.sc*.7,p.sc*1.2)},null)}
+inst(new THREE.SphereGeometry(.5,6,5),new THREE.MeshStandardMaterial({color:0x2e7d32,roughness:.9}),palms.length,(i,d)=>{
+const p=palms[i];d.position.set(p.x,4.8*p.sc,p.z);d.rotation.set(0,0,0);d.scale.set(p.sc*1.2,p.sc*.7,p.sc*1.2)},null);
+buildCoastalScenery(track,th)}
 else if(t==='mountain'){
 /* Improved Mountain Pass scenery — layered pines with snow caps,
 jagged roadside rocks, and a distant snow-capped alpine range.
@@ -1272,7 +1393,15 @@ lens.position.set(0,.72,.92);body.add(lens);
 // Footpegs — small decorative detail near the engine
 const pegL=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.16,6),matDark);pegL.position.set(-.17,.46,.02);pegL.rotation.z=Math.PI/2;body.add(pegL);
 const pegR=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.16,6),matDark);pegR.position.set(.17,.46,.02);pegR.rotation.z=Math.PI/2;body.add(pegR);
-const rider=new THREE.Group();body.add(rider);
+const rider=new THREE.Group();
+// Seat's top surface sits at y=.835 (seat center .79 + half-height .045)
+// but the hips box below was centered at y=.98 with height .2, putting
+// its bottom edge at .88 — a .045 gap of visible air between rider and
+// seat. Shift the whole assembly down to close it instead of nudging
+// individual body parts, which would throw off their proportions
+// relative to each other.
+rider.position.y=-.045;
+body.add(rider);
 const jacketColor=new THREE.Color(pal.body);
 const pantsColor=jacketColor.clone().multiplyScalar(.5);
 const matSuit=new THREE.MeshStandardMaterial({map:suitTex(pal.body),color:0xffffff,roughness:.6,metalness:.1});
@@ -1303,22 +1432,28 @@ const ridge=new THREE.Mesh(new THREE.BoxGeometry(.04,.05,.14),new THREE.MeshStan
 ridge.position.set(0,1.48,.14);rider.add(ridge);
 const neck=new THREE.Mesh(new THREE.CylinderGeometry(.09,.1,.06,10),matArmor);neck.position.set(0,1.3,.22);rider.add(neck);
 // Two-segment arms (upper arm + forearm + hand) instead of one rigid
-// box. armR stays the same outer pivot group so the existing punch
-// animation (rotation.x on armR) still swings the whole arm correctly.
+// box. Both armL and armR are kept (not just armR) since which one
+// throws a punch now depends on the nearest rival's side.
+// g.foreArm exposes the forearm mesh so punch can bend/straighten the
+// elbow instead of just swinging the whole arm as one rigid piece.
 function arm(side){const g=new THREE.Group();g.position.set(side*.19,1.32,.14);
 const upper=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.26),matSuit);upper.position.set(0,-.02,.13);upper.rotation.x=.9;upper.castShadow=true;g.add(upper);
 const fore=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.24),matSuit);fore.position.set(0,-.16,.32);fore.rotation.x=1.25;fore.castShadow=true;g.add(fore);
 const hand=new THREE.Mesh(new THREE.BoxGeometry(.075,.06,.09),matDark);hand.position.set(0,-.24,.44);g.add(hand);
+g.foreArm=fore;
 rider.add(g);return g}
-arm(-1);const armR=arm(1);
+const armL=arm(-1),armR=arm(1);
 // Two-segment legs (thigh + shin + boot), bent toward the footpegs
-// instead of one straight box hanging past the frame.
+// instead of one straight box hanging past the frame. g.shin exposes
+// the shin mesh so a kick can straighten the knee. Both legL and legR
+// are kept since which leg kicks depends on the nearest rival's side.
 function leg(side){const g=new THREE.Group();g.position.set(side*.16,.98,-.06);
 const thigh=new THREE.Mesh(new THREE.BoxGeometry(.1,.09,.3),matPants);thigh.position.set(0,-.06,.14);thigh.rotation.x=.55;thigh.castShadow=true;g.add(thigh);
 const shin=new THREE.Mesh(new THREE.BoxGeometry(.09,.08,.26),matPants);shin.position.set(0,-.28,.22);shin.rotation.x=-.35;shin.castShadow=true;g.add(shin);
 const boot=new THREE.Mesh(new THREE.BoxGeometry(.1,.08,.16),matDark);boot.position.set(0,-.4,.1);g.add(boot);
-rider.add(g)}
-leg(-1);leg(1);
+g.shin=shin;
+rider.add(g);return g}
+const legL=leg(-1),legR=leg(1);
 const flame=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.glow,color:0x66ccff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
 flame.scale.set(1.6,1.6,1);flame.position.set(0,.35,-1.1);flame.visible=false;body.add(flame);
 // Chain weapon — a small spiked ball on a short length of chain rather
@@ -1329,7 +1464,7 @@ const chainLink=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.22,5),matChro
 const spikeBall=new THREE.Mesh(new THREE.IcosahedronGeometry(.09,0),new THREE.MeshStandardMaterial({color:0x3a3d42,metalness:.7,roughness:.4,flatShading:true}));
 spikeBall.position.set(0,-.24,0);chain.add(spikeBall);
 armR.add(chain);
-return{root,body,rw,fw,armR,tail,flame,chain}}
+return{root,body,rw,fw,armL,armR,legL,legR,tail,flame,chain}}
 
 function buildCar(truck,color){const g=new THREE.Group();
 if(truck){box(g,2.4,2.2,5.4,color,0,1.4,0);box(g,2.2,1,1.4,color,0,.7,3)}
@@ -1387,7 +1522,7 @@ function sparks(p,n,col){for(let i=0;i<n;i++)P_SPARK.spawn(p.x,p.y+.6,p.z,(rnd()
 /* ═══ GAME STATE ═══ */
 let G={},selectedTrack=0;
 const inp={left:0,right:0,gas:0,brake:0,punch:0,kick:0,nitro:0},edge={},prev={};
-const CAM={trauma:0,fov:70};
+const CAM={trauma:0,fov:70,introT:0};
 const FX={flash:0,hurt:0};
 let UP={};
 function approachSpeed(c,t,a,e,d){if(c<t){const f=t>0?Math.max(0,c/t):1;return Math.min(t,c+a*(1-Math.pow(Math.min(1,f),e)))}
@@ -1610,7 +1745,34 @@ const nitroOn=inp.nitro&&p.nitro>0&&p.nitroCD<=0;
 m.flame.visible=nitroOn&&G.raceStarted;
 if(nitroOn)m.flame.scale.set(1.4+rnd(),1.4+rnd(),1);
 m.tail.material.emissiveIntensity=(inp.brake&&p.speed>8)?2.2:.4;
-m.armR.rotation.x=p.punchCD>0?-Math.sin((18-p.punchCD)/18*Math.PI)*1.6:0;
+// Punch/kick swing whichever arm/leg is on the side of the nearest
+// rival (p.attackSide, set in doCombat from the target's lateral
+// position) instead of always animating a fixed side. Local +X
+// (armR/legR) reads as the player's screen-left in this rig, so the
+// side actually thrown is the opposite of attackSide's sign. The
+// unused side is reset to rest every frame so it can't get stuck
+// mid-swing from a previous punch/kick that used the other side.
+const atkSign=p.attackSide>0?-1:1;
+const punchArm=atkSign>0?m.armR:m.armL,restArm=atkSign>0?m.armL:m.armR;
+if(m.chain.parent!==punchArm)punchArm.add(m.chain);
+const kickLeg=atkSign>0?m.legR:m.legL,restLeg=atkSign>0?m.legL:m.legR;
+// Punch — was a single rigid whole-arm swing with no sideways motion at
+// all; now the arm also swings outward toward the target (rotation.y)
+// while the forearm straightens (elbow extends), same idea as the
+// original 2D rig's punchExt curve driving the hand out to the side
+// and away from the body rather than just rotating one stiff segment
+// forward.
+if(p.punchCD>0){const pt=Math.sin((18-p.punchCD)/18*Math.PI);
+punchArm.rotation.x=-pt*1.6;punchArm.rotation.y=atkSign*pt*.9;punchArm.foreArm.rotation.x=1.25-pt*.85}
+else{punchArm.rotation.x=0;punchArm.rotation.y=0;punchArm.foreArm.rotation.x=1.25}
+restArm.rotation.x=0;restArm.rotation.y=0;restArm.foreArm.rotation.x=1.25;
+// Kick — previously had no visual animation at all (legs never moved).
+// The attacking leg swings outward at the hip toward the target while
+// the knee straightens, mirroring the punch's shoulder+elbow approach.
+if(p.kickCD>0){const kt=Math.sin((26-p.kickCD)/26*Math.PI);
+kickLeg.rotation.z=atkSign*kt*.9;kickLeg.shin.rotation.x=-.35+kt*.55}
+else{kickLeg.rotation.z=0;kickLeg.shin.rotation.x=-.35}
+restLeg.rotation.z=0;restLeg.shin.rotation.x=-.35;
 m.chain.visible=p.weapon==='chain'&&p.weaponHits>0;
 if(p.speed>20&&G.frame%3===0){const wp=pWorld();
 P_SMOKE.spawn(wp.x-Math.sin(h)*.9,.3,wp.z-Math.cos(h)*.9,(rnd()-.5),1,(rnd()-.5),.5,2,.4,.4,.45)}
@@ -1655,6 +1817,22 @@ function camUpdate(){const p=G.player,wp=pWorld(),s=trackSample(G.distance);
 const fwd=new THREE.Vector3(Math.sin(s.h),0,Math.cos(s.h));
 const spN=clamp(p.speed/UP.maxSpd,0,1.35);
 const nitroOn=inp.nitro&&p.nitro>0&&p.nitroCD<=0;
+if(!G.raceStarted){
+// Countdown intro — a slow orbit around the bike that starts off to the
+// side and eases back to directly behind by the moment the countdown
+// finishes, so it hands off seamlessly into the standard chase cam
+// instead of snapping into position.
+CAM.introT+=1/60;
+const introDur=3.7,introProg=Math.min(1,CAM.introT/introDur),introEase=1-Math.pow(1-introProg,3);
+const backA=Math.atan2(-fwd.x,-fwd.z),a=backA+1.5*(1-introEase);
+const desired=new THREE.Vector3(wp.x+Math.sin(a)*8.5,wp.y+2.8,wp.z+Math.cos(a)*8.5);
+camera.position.lerp(desired,1-Math.exp(-.06));
+camera.lookAt(new THREE.Vector3(wp.x,wp.y+1,wp.z));
+CAM.fov=lerp(CAM.fov,62,.06);camera.fov=CAM.fov;camera.updateProjectionMatrix();
+if(skyDome)skyDome.position.copy(camera.position);
+if(starField)starField.position.copy(camera.position);
+if(sunSprite)sunSprite.position.copy(camera.position).add(sunOff);
+return}
 const desired=new THREE.Vector3().copy(wp).addScaledVector(fwd,-(7.5+spN*.4));desired.y=3.1+spN*.15;
 camera.position.lerp(desired,1-Math.exp(-.09));
 CAM.trauma=Math.max(0,CAM.trauma-.025);
@@ -1774,7 +1952,11 @@ G.onIce=onI}
 if(G.theme==='coastal'){const pct=G.distance/G.totalDist;
 if(!G.spray30&&pct>=.3){G.spray30=true;G.sprayT=90}
 else if(!G.spray70&&pct>=.7){G.spray70=true;G.sprayT=90}
-if(G.sprayT>0)G.sprayT--}
+if(G.sprayT>0)G.sprayT--
+if(world&&world.userData.gulls)for(const gu of world.userData.gulls){
+const t=G.frame*.016*gu.speed+gu.phase;
+gu.g.position.y=gu.baseY+Math.sin(t)*.7;
+const flap=Math.sin(t*3.2)*.55;gu.wL.rotation.z=flap;gu.wR.rotation.z=-flap}}
 /* City: steam drifting up from sidewalk grates ahead of the player */
 if(G.theme==='city'&&G.frame%24===0){const side=rnd()<.5?1:-1;const sv=new THREE.Vector3();
 worldPos(G.distance+16+rnd()*26,side*(RACE_HW+3.6),sv);
@@ -1795,7 +1977,13 @@ G.running=true;G.paused=false;   /* REV 10: never start in a stuck-paused state 
 ['ov-start','ov-over','ov-pause','ov-champ-intro','ov-championship','ov-game-complete','ov-tracks'].forEach(id=>disp(id,'none'));
 disp('hud','flex');const tc=$('tc');if(tc)tc.classList.remove('hidden');const be=$('btn-exit');if(be)be.classList.remove('hidden');
 const s=trackSample(0),fwd=new THREE.Vector3(Math.sin(s.h),0,Math.cos(s.h));
-camera.position.set(-fwd.x*9,3.4,-fwd.z*9);camera.lookAt(0,1,0);CAM.fov=70;
+/* Start the camera already at the intro sweep's t=0 position (side
+offset, matching camUpdate's countdown block) instead of behind the
+bike — otherwise the sweep has to visibly lerp from behind over to the
+side on the very first frames before easing back, reading as a snap. */
+const introBackA=Math.atan2(-fwd.x,-fwd.z),introA=introBackA+1.5;
+camera.position.set(s.x+Math.sin(introA)*8.5,2.8,s.z+Math.cos(introA)*8.5);
+camera.lookAt(s.x,1,s.z);CAM.fov=70;CAM.introT=0;
 lastTs=performance.now();acc=0;
 if(!rafOn){rafOn=true;requestAnimationFrame(gameLoop)}
 startCountdown()}
@@ -2027,8 +2215,10 @@ const remaining=Object.keys(m).filter(k=>m[k]);
 if(remaining.length===0)forcedName();else renderSlots()});
 on('btn-profile-delete-cancel','click',()=>{pendingDelete=null;disp('ov-profile-delete','none')});
 [['tl','left'],['tr','right'],['tgas','gas'],['tbrk','brake'],['tpunch','punch'],['tkick','kick'],['tnitro','nitro']].forEach(([id,k])=>{
-const dn=e=>{e.preventDefault();inp[k]=1};const up=e=>{e.preventDefault();inp[k]=0};
-on(id,'touchstart',dn,{passive:false});on(id,'touchend',up,{passive:false});
+const el=document.getElementById(id);
+const dn=e=>{e.preventDefault();if(editModeActive)return;inp[k]=1;if(el)el.classList.add('pressed')};
+const up=e=>{e.preventDefault();inp[k]=0;if(el)el.classList.remove('pressed')};
+on(id,'touchstart',dn,{passive:false});on(id,'touchend',up,{passive:false});on(id,'touchcancel',up,{passive:false});
 on(id,'mousedown',dn);on(id,'mouseup',up);on(id,'mouseleave',up)});
 /* ═══ CONTROL LAYOUT EDITOR ═══
 Ported from the 2D build. Each button's shipped position/size — exactly
