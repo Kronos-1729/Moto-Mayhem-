@@ -1382,10 +1382,29 @@ Host the .glb yourself (same idea as music.mp3) and update the path
 here if you use a different name/location. */
 const RIDER_GLB_URL='rider.glb';
 let riderTemplate=null,riderLoadFailed=false;
+/* TEMP DIAGNOSTIC — an on-screen panel reporting exactly what happens
+during the GLB load and rider construction, since dev tools aren't
+available on a tablet. Remove this whole block (and its one call site
+in buildBikeFromGLB, marked below) once the rider is confirmed working. */
+const riderDiag=document.createElement('div');
+riderDiag.style.cssText='position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,.85);color:#0f0;font:11px monospace;padding:8px;max-width:96vw;max-height:60vh;overflow:auto;white-space:pre-wrap;pointer-events:none';
+riderDiag.textContent='rider diag: waiting for load...';
+document.body.appendChild(riderDiag);
+function diagLine(s){riderDiag.textContent+='\n'+s}
+diagLine('THREE.GLTFLoader present: '+(typeof THREE.GLTFLoader));
+diagLine('THREE.SkeletonUtils present: '+(typeof THREE.SkeletonUtils));
+diagLine('Loading from: '+RIDER_GLB_URL);
 const riderAssetPromise=new Promise(resolve=>{
 const loader=new THREE.GLTFLoader();
+
 loader.load(RIDER_GLB_URL,gltf=>{
 const scene=gltf.scene;
+diagLine('LOAD OK. Mesh names found:');
+const meshNames=[],boneNames=[];
+scene.traverse(o=>{if(o.isMesh)meshNames.push(o.name);if(o.isBone)boneNames.push(o.name)});
+diagLine('  '+meshNames.join(', '));
+diagLine('Bone names found ('+boneNames.length+' total):');
+diagLine('  '+boneNames.join(', '));
 // Recolorable base textures — the suit/footwear/helmet diffuse maps
 // are baked with actual color in them (a navy suit, a dark helmet),
 // so a straight material.color multiply-tint would skew every
@@ -1411,7 +1430,8 @@ const recolorBases={};
 scene.traverse(o=>{if(o.isMesh&&recolorMeshNames[o.name]&&o.material&&o.material.map){
 recolorBases[o.name]=recolorBase(o.material.map)}});
 riderTemplate={scene,recolorBases};
-resolve()},undefined,err=>{riderLoadFailed=true;resolve()})});
+diagLine('riderTemplate cached OK. Waiting for buildBikeFromGLB...');
+resolve()},undefined,err=>{riderLoadFailed=true;diagLine('LOAD FAILED: '+(err&&err.message?err.message:String(err)));resolve()})});
 /* Riding pose — the source rig is a neutral A/T-pose, not posed for a
 bike, so bones are rotated here into a seated stance: hips down onto
 the seat, knees bent back toward the pegs, elbows bent forward with
@@ -1606,7 +1626,16 @@ for(const j of[armL,armR,armL.foreArm,armR.foreArm,legL,legR,legL.shin,legR.shin
 {j.restX=j.rotation.x;j.restY=j.rotation.y;j.restZ=j.rotation.z}
 return{root,body,rw,fw,armL,armR,legL,legR,tail,flame,chain}}
 
-function buildBike(pal){return riderTemplate?buildBikeFromGLB(pal):buildBikeProcedural(pal)}
+function buildBike(pal){
+if(riderTemplate){
+try{
+const result=buildBikeFromGLB(pal);
+diagLine('buildBikeFromGLB OK. armR='+!!result.armR+' armL='+!!result.armL+' legR='+!!result.legR+' legL='+!!result.legL
++' armR.foreArm='+!!(result.armR&&result.armR.foreArm)+' legR.shin='+!!(result.legR&&result.legR.shin));
+return result;
+}catch(e){diagLine('buildBikeFromGLB THREW: '+e.message);riderTemplate=null}
+}
+return buildBikeProcedural(pal)}
 
 function buildCar(truck,color){const g=new THREE.Group();
 if(truck){box(g,2.4,2.2,5.4,color,0,1.4,0);box(g,2.2,1,1.4,color,0,.7,3)}
