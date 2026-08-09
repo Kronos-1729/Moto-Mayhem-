@@ -1579,6 +1579,13 @@ clone.rotation.y=RIDER_ROT_Y;
 body.add(clone);
 const recolorMats={Wolf3D_Outfit_Top:pal.body,Wolf3D_Outfit_Footwear:pal.body,Wolf3D_Headwear:pal.helmet};
 clone.traverse(o=>{if(o.isMesh){o.castShadow=true;
+// SkinnedMesh frustum-culling normally uses a bounding sphere computed
+// from the BIND pose. poseRiderForBike() applies fairly large bone
+// rotations away from that bind pose, so the actual posed geometry can
+// end up outside the stale sphere — three.js then silently skips
+// drawing the mesh every frame, with no error at all. This is almost
+// certainly why the rider was invisible while the bike rendered fine.
+o.frustumCulled=false;
 const tint=recolorMats[o.name],base=riderTemplate.recolorBases[o.name];
 if(tint&&base){o.material=o.material.clone();o.material.map=base;o.material.color=new THREE.Color(tint)}}});
 const b=name=>clone.getObjectByName(name);
