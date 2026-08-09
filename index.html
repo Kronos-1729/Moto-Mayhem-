@@ -1607,7 +1607,41 @@ clone.traverse(o=>{if(o.isMesh){o.castShadow=true;
 // certainly why the rider was invisible while the bike rendered fine.
 o.frustumCulled=false;
 const tint=recolorMats[o.name],base=riderTemplate.recolorBases[o.name];
-if(tint&&base){o.material=o.material.clone();o.material.map=base;o.material.color=new THREE.Color(tint)}}});
+if(tint&&base){o.material=o.material.clone();o.material.map=base;o.material.color=new THREE.Color(tint)}
+// Two more failure modes that both produce "loads fine, correct
+// vertex/bone/bbox data, renders nothing, zero errors" — applied to
+// EVERY rider mesh, not just the 3 recolored ones, since either can
+// affect the untouched meshes too:
+//  1) A negative scale baked into a BONE somewhere in the source
+//     Armature (a known RPM/Mixamo export artifact from the Blender
+//     axis-conversion step) flips triangle winding on the GPU during
+//     skin computation. Three.js auto-compensates for negative scale,
+//     but only by checking the MESH's own matrixWorld determinant — it
+//     can't see a flip baked purely into the bone chain that feeds the
+//     vertex shader, so that compensation never fires here. DoubleSide
+//     sidesteps the question entirely: both winding directions draw.
+//  2) material.clone() (used above for the 3 recolored meshes) copies
+//     everything in Material's formal copy() schema, but GLTFLoader
+//     sets `skinning` as a plain ad-hoc property assignment outside
+//     that schema — clone() can silently drop it, compiling a shader
+//     with no skinning vertex-transform code at all. Re-asserting it
+//     here is a no-op on the 4 meshes that never needed it and a fix
+//     on the 3 that might have lost it — no need to know which case
+//     applies in advance.
+o.material.side=THREE.DoubleSide;
+if('skinning' in o.material)o.material.skinning=true;
+o.material.needsUpdate=true}});
+if(!window.__riderMeshDiagDone){window.__riderMeshDiagDone=true;
+diagLine('Per-mesh state after fix:');
+clone.traverse(o=>{if(o.isSkinnedMesh){
+const sw=o.geometry.attributes.skinWeight,si=o.geometry.attributes.skinIndex;
+let nanW=0,nanI=0,allZeroW=true;
+if(sw)for(let k=0;k<Math.min(50,sw.count);k++)for(let c=0;c<4;c++){
+const v=sw.getComponent(k,c);if(!isFinite(v))nanW++;if(v!==0)allZeroW=false}
+if(si)for(let k=0;k<Math.min(50,si.count);k++)for(let c=0;c<4;c++)if(!isFinite(si.getComponent(k,c)))nanI++;
+diagLine('  '+o.name+': recolored='+!!recolorMats[o.name]+' skinning='+o.material.skinning+' side='+o.material.side
++' visible='+o.visible+' skinWeightNaNs='+nanW+' skinIndexNaNs='+nanI+' skinWeightAllZero(first50)='+allZeroW);
+}})}
 const b=name=>clone.getObjectByName(name);
 const armR=b('RightArm'),armL=b('LeftArm'),legR=b('RightUpLeg'),legL=b('LeftUpLeg');
 armR.foreArm=b('RightForeArm');armL.foreArm=b('LeftForeArm');
