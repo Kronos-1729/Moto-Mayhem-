@@ -1631,17 +1631,31 @@ if(tint&&base){o.material=o.material.clone();o.material.map=base;o.material.colo
 o.material.side=THREE.DoubleSide;
 if('skinning' in o.material)o.material.skinning=true;
 o.material.needsUpdate=true}});
+/* Wrapped in its own try/catch — this block is diagnostic-only and
+must never be able to take the real fix above down with it. Before this
+fix, a bug in here (.getComponent() isn't a valid BufferAttribute
+method in this r128 build — the correct accessors are .getX/.getY/
+.getZ/.getW) threw partway through, which propagated all the way up
+through buildBikeFromGLB's own try/catch in buildBike(), which then
+nulled out riderTemplate and fell back to the procedural rider — even
+though the actual DoubleSide/skinning fix just above had already been
+applied successfully to every material before the crash. */
+try{
 if(!window.__riderMeshDiagDone){window.__riderMeshDiagDone=true;
 diagLine('Per-mesh state after fix:');
 clone.traverse(o=>{if(o.isSkinnedMesh){
 const sw=o.geometry.attributes.skinWeight,si=o.geometry.attributes.skinIndex;
 let nanW=0,nanI=0,allZeroW=true;
-if(sw)for(let k=0;k<Math.min(50,sw.count);k++)for(let c=0;c<4;c++){
-const v=sw.getComponent(k,c);if(!isFinite(v))nanW++;if(v!==0)allZeroW=false}
-if(si)for(let k=0;k<Math.min(50,si.count);k++)for(let c=0;c<4;c++)if(!isFinite(si.getComponent(k,c)))nanI++;
+if(sw)for(let k=0;k<Math.min(50,sw.count);k++){
+const vals=[sw.getX(k),sw.getY(k),sw.getZ(k),sw.getW(k)];
+for(const v of vals){if(!isFinite(v))nanW++;if(v!==0)allZeroW=false}}
+if(si)for(let k=0;k<Math.min(50,si.count);k++){
+const vals=[si.getX(k),si.getY(k),si.getZ(k),si.getW(k)];
+for(const v of vals)if(!isFinite(v))nanI++}
 diagLine('  '+o.name+': recolored='+!!recolorMats[o.name]+' skinning='+o.material.skinning+' side='+o.material.side
 +' visible='+o.visible+' skinWeightNaNs='+nanW+' skinIndexNaNs='+nanI+' skinWeightAllZero(first50)='+allZeroW);
 }})}
+}catch(diagErr){diagLine('mesh diagnostic threw (non-fatal, rider fix above is unaffected): '+diagErr.message)}
 const b=name=>clone.getObjectByName(name);
 const armR=b('RightArm'),armL=b('LeftArm'),legR=b('RightUpLeg'),legL=b('LeftUpLeg');
 armR.foreArm=b('RightForeArm');armL.foreArm=b('LeftForeArm');
@@ -1662,10 +1676,15 @@ return{root,body,rw,fw,armL,armR,legL,legR,tail,flame,chain,riderClone:clone}}
 
 function buildBike(pal){
 if(riderTemplate){
-try{
-const result=buildBikeFromGLB(pal);
+let result;
+try{result=buildBikeFromGLB(pal);
 diagLine('buildBikeFromGLB OK. armR='+!!result.armR+' armL='+!!result.armL+' legR='+!!result.legR+' legL='+!!result.legL
 +' armR.foreArm='+!!(result.armR&&result.armR.foreArm)+' legR.shin='+!!(result.legR&&result.legR.shin));
+}catch(e){diagLine('buildBikeFromGLB THREW: '+e.message);riderTemplate=null;return buildBikeProcedural(pal)}
+// Diagnostic-only from here down — wrapped separately so a bug in the
+// bbox/canary check (which already happened once, see the mesh-state
+// block above) can't discard a rider that was actually built fine.
+try{
 if(!window.__riderDiagDone){window.__riderDiagDone=true;
 const clone=result.riderClone;
 if(clone){
@@ -1690,8 +1709,8 @@ const canary=new THREE.Mesh(new THREE.SphereGeometry(.3,8,6),new THREE.MeshBasic
 canary.position.set(0,1,0);canary.renderOrder=999;clone.add(canary);
 diagLine('Canary sphere added at clone-local (0,1,0) — magenta ball. Visible = clone transform chain OK, problem is skin/material specific. Not visible = clone itself is mispositioned/unparented.');
 }else{diagLine('No riderClone reference returned — cannot bbox-check')}}
+}catch(diagErr){diagLine('bbox/canary diagnostic threw (non-fatal, rider above is unaffected): '+diagErr.message)}
 return result;
-}catch(e){diagLine('buildBikeFromGLB THREW: '+e.message);riderTemplate=null}
 }
 return buildBikeProcedural(pal)}
 
