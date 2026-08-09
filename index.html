@@ -68,6 +68,9 @@ canvas.gl{display:block;width:900px;height:506px}
 .sl2{color:#6b7280;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
 .grade{font-size:42px;font-weight:700;margin:6px 0 2px;font-family:'Rajdhani','Inter',sans-serif}
 .stab{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#9aa0ac;font-family:'Rajdhani','Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;padding:8px 18px;border-radius:6px;cursor:pointer}
+.stab:disabled{opacity:.55;cursor:not-allowed}
+.stab-col{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:150px}
+.stab-hint{color:#fbbf24;font-size:8px;line-height:1.35;letter-spacing:.5px;text-align:center;min-height:11px}
 .stab.active{border-color:#ff5e3a;color:#ff5e3a;background:rgba(255,94,58,.08)}
 .stab:disabled{opacity:.4;cursor:not-allowed}
 .btn-champ{background:rgba(255,94,58,.15);border:1px solid rgba(255,94,58,.4);color:#ff5e3a;font-family:'Rajdhani','Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;padding:6px 10px;border-radius:5px;cursor:pointer;text-transform:uppercase}
@@ -164,9 +167,24 @@ font-family:'Rajdhani','Inter',sans-serif;letter-spacing:.5px}
 #tkick{bottom:92px;right:98px;width:58px;height:58px;font-size:11px;background:rgba(255,138,92,.1);border:1px solid rgba(255,138,92,.28);color:#ff8a5c}
 #tnitro{bottom:174px;right:16px;width:52px;height:52px;font-size:10px;background:rgba(58,168,255,.12);border:1px solid rgba(58,168,255,.3);color:#5ec8ff}
 #fatal{position:fixed;inset:0;z-index:99;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.94);color:#ff8080;font-family:Consolas,monospace;font-size:14px;text-align:center;white-space:pre-wrap;padding:30px}
+/* ── ROTATE TO LANDSCAPE PROMPT — ported from Moto_Mayhem.html ── */
+#rotate-prompt{display:none;position:fixed;inset:0;z-index:999;background:#0a0b0e;color:#fff;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:24px;font-family:'Rajdhani','Inter',sans-serif}
+#rotate-prompt .icon{font-size:52px;animation:rotatehint 1.6s ease-in-out infinite}
+#rotate-prompt .msg{font-size:20px;font-weight:700;letter-spacing:.5px}
+#rotate-prompt .sub{font-size:13px;color:rgba(255,255,255,.55);max-width:280px;line-height:1.5}
+@keyframes rotatehint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+@media (orientation:portrait){
+#rotate-prompt{display:flex}
+#wrap{display:none}
+}
 </style>
 </head>
 <body>
+<div id="rotate-prompt">
+<div class="icon">📱</div>
+<div class="msg">Rotate your device</div>
+<div class="sub">Moto Mayhem is a landscape game — turn your phone sideways to play</div>
+</div>
 <div id="fatal"></div>
 <script>window.addEventListener('error',function(e){var d=document.getElementById('fatal');if(d){d.style.display='flex';d.textContent='⚠ '+(e.message||e.error)+'  (line '+(e.lineno||'?')+')';}},true);</script>
 <div id="wrap"><div id="stage">
@@ -221,10 +239,10 @@ font-family:'Rajdhani','Inter',sans-serif;letter-spacing:.5px}
 <div class="ov" id="ov-tracks" style="display:none">
 <button class="btn-back" id="btn-back-main">◀ BACK</button>
 <h1 style="font-size:30px">SELECT TRACK</h1>
-<div style="display:flex;gap:10px;margin-bottom:10px">
-<button class="stab active" id="series-tab-0">🌃 STREET</button>
-<button class="stab" id="series-tab-1">🏜️ OUTLAW</button>
-<button class="stab" id="series-tab-2">☠️ GAUNTLET</button>
+<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start">
+<div class="stab-col"><button class="stab active" id="series-tab-0">🌃 STREET</button><div class="stab-hint"></div></div>
+<div class="stab-col"><button class="stab" id="series-tab-1">🏜️ OUTLAW</button><div class="stab-hint" id="stab-hint-1"></div></div>
+<div class="stab-col"><button class="stab" id="series-tab-2">☠️ GAUNTLET</button><div class="stab-hint" id="stab-hint-2"></div></div>
 </div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px">
 <button class="btn-champ" id="btn-champ-0" disabled>⚑ CHAMPIONSHIP</button>
@@ -456,7 +474,7 @@ const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(70,900/506,.1,9000);
 const wrapEl=$('wrap'),stageEl=$('stage');
 function fitStage(){if(wrapEl&&stageEl)stageEl.style.transform='scale('+(wrapEl.clientWidth/900)+')'}
-fitStage();addEventListener('resize',fitStage);if(window.ResizeObserver&&wrapEl)new ResizeObserver(fitStage).observe(wrapEl);
+fitStage();addEventListener('resize',fitStage);addEventListener('orientationchange',fitStage);if(window.ResizeObserver&&wrapEl)new ResizeObserver(fitStage).observe(wrapEl);
 let world=null,sunLight=null,headLight=null,hlTarget=null;
 function clearWorld(){if(!world)return;scene.remove(world);
 world.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose())}});
@@ -2128,7 +2146,7 @@ function buildTrackList(){const list=$('track-list');if(!list)return;list.innerH
 for(let i=currentSeries*3;i<currentSeries*3+3;i++){
 const t=TRACKS[i],locked=isTrackLocked(i);
 const card=document.createElement('div');card.className='tcard'+(selectedTrack===i?' active':'')+(locked?' locked':'');
-card.innerHTML='<div class="ti">'+t.icon+'</div><div style="flex:1"><div class="tn">'+t.name+'</div><div class="tm">'+t.totalDist+'m · up to '+t.waves[2].rivals+' rivals</div><div class="tb2">'+(bestFinish[i]?'Best: #'+bestFinish[i]:'')+'</div>'+(locked?'<div class="tl2">🔒 '+(currentSeries===0?'Finish 1st/2nd on Night Highway':currentSeries===1?'Score 28+ in Street Series Championship':'Score 30+ in Outlaw Series Championship')+'</div>':'')+'</div>'+(locked?'':'<div class="tplay">▶</div>');
+card.innerHTML='<div class="ti">'+t.icon+'</div><div style="flex:1"><div class="tn">'+t.name+'</div><div class="tm">'+t.totalDist+'m · up to '+t.waves[2].rivals+' rivals</div><div class="tb2">'+(bestFinish[i]?'Best: #'+bestFinish[i]:'')+'</div>'+(locked?'<div class="tl2">🔒 '+(currentSeries===0?'Finish 1st/2nd on Night Highway':currentSeries===1?'Score 28+ in Street Series Championship':'Score 30+ in Outlaw Circuit Championship')+'</div>':'')+'</div>'+(locked?'':'<div class="tplay">▶</div>');
 if(!locked){const play=()=>{selectedTrack=i;startGame()};
 const tp=card.querySelector('.tplay');if(tp)tp.addEventListener('click',e=>{e.stopPropagation();play()});
 card.addEventListener('click',()=>{selectedTrack=i;buildTrackList();txt('track-desc',TRACK_DESC[t.theme])})}
@@ -2136,6 +2154,14 @@ list.appendChild(card)}
 txt('track-desc',TRACK_DESC[TRACKS[selectedTrack].theme])}
 function openTracks(){const t1=$('series-tab-1'),t2=$('series-tab-2');
 if(t1)t1.disabled=!outlawUnlocked&&!DEBUG_UNLOCK_ALL;if(t2)t2.disabled=!gauntletUnlocked&&!DEBUG_UNLOCK_ALL;
+/* Series tabs get hard-disabled above when locked, so a player can
+   never click into one to discover why (unlike the original's series
+   cards, which always showed the requirement text right on the card
+   whether you could click it or not). These hint lines are that same
+   always-visible explanation, just attached to the tab instead. */
+const h1=$('stab-hint-1'),h2=$('stab-hint-2');
+if(h1)h1.textContent=(outlawUnlocked||DEBUG_UNLOCK_ALL)?'':'🔒 Score 28+ in Street Series Championship';
+if(h2)h2.textContent=(gauntletUnlocked||DEBUG_UNLOCK_ALL)?'':'🔒 Score 30+ in Outlaw Circuit Championship';
 for(let s=0;s<3;s++){const tb=$('series-tab-'+s);if(tb)tb.classList.toggle('active',s===currentSeries);
 const b=$('btn-champ-'+s);if(b){const un=DEBUG_UNLOCK_ALL||(s===0?track2Unlocked:s===1?outlawUnlocked:gauntletUnlocked);
 b.disabled=!un;
