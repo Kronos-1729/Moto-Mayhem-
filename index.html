@@ -1699,15 +1699,35 @@ clone.traverse(o=>{if(o.isSkinnedMesh){skinnedCount++;
 if(firstSkeletonBones<0&&o.skeleton)firstSkeletonBones=o.skeleton.bones.length;
 if(o.geometry&&o.geometry.attributes.position)totalVerts+=o.geometry.attributes.position.count}});
 diagLine('SkinnedMesh count='+skinnedCount+' totalVerts='+totalVerts+' skeleton.bones.length='+firstSkeletonBones);
-// Unmissable canary — plain unskinned MeshBasicMaterial sphere parented
-// to the clone at local (0,1,0). If THIS is also invisible, the bug is
-// in the clone's own transform/parenting chain (scale/position/rotation
-// or where it got added), not in skinning/materials specifically. If
-// the canary IS visible but the rider mesh isn't, the problem is
-// isolated to the skinned geometry/material path.
+// geometry.index/drawRange — never checked yet. A mesh can have fully
+// valid vertex/weight data and still draw ZERO triangles if the index
+// buffer is empty or drawRange.count is 0 — passes every check so far
+// (bbox comes from raw vertex positions regardless of whether any
+// triangle actually gets rasterized) while rendering nothing.
+clone.traverse(o=>{if(o.isSkinnedMesh){const g=o.geometry;
+diagLine(' idx check "'+o.name+'": index='+(g.index?('len='+g.index.count):'NULL(non-indexed, uses position.count='+g.attributes.position.count+')')
++' drawRange={start:'+g.drawRange.start+',count:'+g.drawRange.count+'}')}});
+// Canary v2 — the first canary (small, depth-tested, at local y=1) was
+// ambiguous: after the tank-occlusion fix moved RIDER_Y_OFFSET, it's
+// unclear from a phone screenshot whether it was actually visible or
+// just hard to spot. This one removes every remaining variable: bigger,
+// positioned far above ANY bike geometry (local y=2.5 → world ≈1.67,
+// well above the .86 handlebar height), and depthTest:false so it is
+// PHYSICALLY IMPOSSIBLE for the tank/seat/anything else to occlude it —
+// isolates the test to "does this draw in the frustum at all," full stop.
+const canary2=new THREE.Mesh(new THREE.SphereGeometry(.5,10,8),new THREE.MeshBasicMaterial({color:0x00ff00,depthTest:false}));
+canary2.position.set(0,2.5,0);canary2.renderOrder=9999;clone.add(canary2);
+canary2.updateMatrixWorld(true);
+const canaryWorldPos=new THREE.Vector3();canary2.getWorldPosition(canaryWorldPos);
+const ndc=canaryWorldPos.clone().project(camera);
+diagLine('Canary2 (big green, depthTest OFF) world pos=('+canaryWorldPos.x.toFixed(2)+','+canaryWorldPos.y.toFixed(2)+','+canaryWorldPos.z.toFixed(2)+')');
+diagLine('Canary2 NDC=('+ndc.x.toFixed(3)+','+ndc.y.toFixed(3)+','+ndc.z.toFixed(3)+') — in-frustum if all three are within [-1,1]. '
++(Math.abs(ndc.x)<=1&&Math.abs(ndc.y)<=1&&ndc.z>=-1&&ndc.z<=1?'IN FRUSTUM.':'OUT OF FRUSTUM <-- THIS IS THE BUG if so.'));
+diagLine('If Canary2 (bright green, no depth test) is STILL not visible on screen: the bug is not occlusion, not skinning, not materials — something is prevented from reaching the screen at the renderer/camera level. If Canary2 IS visible: compare against the small magenta canary below to isolate further.');
+// Original small canary kept for the occlusion-specific comparison
 const canary=new THREE.Mesh(new THREE.SphereGeometry(.3,8,6),new THREE.MeshBasicMaterial({color:0xff00ff}));
 canary.position.set(0,1,0);canary.renderOrder=999;clone.add(canary);
-diagLine('Canary sphere added at clone-local (0,1,0) — magenta ball. Visible = clone transform chain OK, problem is skin/material specific. Not visible = clone itself is mispositioned/unparented.');
+diagLine('Canary1 (small magenta, depth-tested) still present at local (0,1,0) for comparison.');
 }else{diagLine('No riderClone reference returned — cannot bbox-check')}}
 }catch(diagErr){diagLine('bbox/canary diagnostic threw (non-fatal, rider above is unaffected): '+diagErr.message)}
 return result;
