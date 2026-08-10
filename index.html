@@ -1589,6 +1589,7 @@ was positioned low enough to be occluded by the tank/seat/engine block
 rather than sitting above it. Raised RIDER_Y_OFFSET by ~.35 to clear
 that. Still expect another round of tuning once this is visible. */
 const RIDER_SCALE=.52,RIDER_Y_OFFSET=.37,RIDER_ROT_Y=0;
+window.__RIDER_FORCE_BASIC=true; // TEMP TEST — see comment in buildBikeFromGLB below
 function buildBikeFromGLB(pal){const{root,body,rw,fw,tail,flame}=buildVehicle(pal);
 const matChrome=new THREE.MeshStandardMaterial({color:0xaeb6c0,metalness:.9,roughness:.2});
 const clone=THREE.SkeletonUtils.clone(riderTemplate.scene);
@@ -1630,7 +1631,22 @@ if(tint&&base){o.material=o.material.clone();o.material.map=base;o.material.colo
 //     applies in advance.
 o.material.side=THREE.DoubleSide;
 if('skinning' in o.material)o.material.skinning=true;
-o.material.needsUpdate=true}});
+o.material.needsUpdate=true;
+// TEMP TEST — everything about the geometry/weights/indices/skin flag
+// has checked out clean, and the canary (same transform chain, same
+// parent) renders fine, which narrows this to the material/shader path
+// itself. Forcing a dead-simple MeshBasicMaterial (no PBR lighting
+// shader, no normal-dependent lighting math at all) with skinning
+// force-enabled is a direct test: if these appear now, the problem was
+// somewhere in the standard/PBR shader compilation for skinned meshes
+// on this device. If they STILL don't appear even as flat-shaded unlit
+// materials, the problem is upstream of materials entirely. Distinct
+// bright color per mesh so partial results are still informative.
+if(window.__RIDER_FORCE_BASIC){
+const testColors={Wolf3D_Head:0xff0000,Wolf3D_Teeth:0xffffff,EyeLeft:0x00ffff,EyeRight:0x00ffff,
+Wolf3D_Outfit_Top:0x0000ff,Wolf3D_Outfit_Footwear:0xffff00,Wolf3D_Headwear:0xff8800};
+o.material=new THREE.MeshBasicMaterial({color:testColors[o.name]||0xffffff,skinning:true,side:THREE.DoubleSide});
+}}});
 /* Wrapped in its own try/catch — this block is diagnostic-only and
 must never be able to take the real fix above down with it. Before this
 fix, a bug in here (.getComponent() isn't a valid BufferAttribute
@@ -1642,6 +1658,7 @@ though the actual DoubleSide/skinning fix just above had already been
 applied successfully to every material before the crash. */
 try{
 if(!window.__riderMeshDiagDone){window.__riderMeshDiagDone=true;
+diagLine('MeshBasicMaterial force-test: '+(window.__RIDER_FORCE_BASIC?'ACTIVE (rider should show as flat bright colors — red head, blue top, yellow shoes, orange helmet — if visible at all)':'off'));
 diagLine('Per-mesh state after fix:');
 clone.traverse(o=>{if(o.isSkinnedMesh){
 const sw=o.geometry.attributes.skinWeight,si=o.geometry.attributes.skinIndex;
