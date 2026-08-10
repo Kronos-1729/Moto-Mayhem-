@@ -1581,14 +1581,14 @@ for(const j of[armL,armR,armL.foreArm,armR.foreArm,legL,legR,legL.shin,legR.shin
 {j.restX=j.rotation.x;j.restY=j.rotation.y;j.restZ=j.rotation.z}
 return{root,body,rw,fw,armL,armR,legL,legR,tail,flame,chain}}
 
-/* First-pass scale/offset for fitting the GLB rider onto the seat —
-the source avatar is real-world (~1.7 units tall) scale while this
-whole bike is built at a much smaller, stylized scale, so it needs to
-be scaled down significantly. RIDER_ROT_Y is a 180°-flip switch in
-case the model faces backwards once loaded (rig forward-axis isn't
-knowable without seeing it rendered). All three are guesses to be
-corrected once this is actually visible in-game. */
-const RIDER_SCALE=.52,RIDER_Y_OFFSET=.02,RIDER_ROT_Y=0;
+/* Second-pass tuning of the same values, now grounded in an actual
+screenshot instead of a guess: the canary sphere (see below) landed at
+world y≈.54, right at the tank's own vertical span (tank center y=.66,
+half-height .11 → spans .55 to .77) — confirming the character's torso
+was positioned low enough to be occluded by the tank/seat/engine block
+rather than sitting above it. Raised RIDER_Y_OFFSET by ~.35 to clear
+that. Still expect another round of tuning once this is visible. */
+const RIDER_SCALE=.52,RIDER_Y_OFFSET=.37,RIDER_ROT_Y=0;
 function buildBikeFromGLB(pal){const{root,body,rw,fw,tail,flame}=buildVehicle(pal);
 const matChrome=new THREE.MeshStandardMaterial({color:0xaeb6c0,metalness:.9,roughness:.2});
 const clone=THREE.SkeletonUtils.clone(riderTemplate.scene);
