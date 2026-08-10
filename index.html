@@ -1387,10 +1387,10 @@ during the GLB load and rider construction, since dev tools aren't
 available on a tablet. Remove this whole block (and its one call site
 in buildBikeFromGLB, marked below) once the rider is confirmed working. */
 const riderDiag=document.createElement('div');
-riderDiag.style.cssText='position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,.85);color:#0f0;font:11px monospace;padding:8px;max-width:96vw;max-height:60vh;overflow:auto;white-space:pre-wrap;pointer-events:none';
+riderDiag.style.cssText='position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,.85);color:#0f0;font:11px monospace;padding:8px;max-width:96vw;max-height:60vh;overflow:auto;white-space:pre-wrap;pointer-events:auto;touch-action:pan-y';
 riderDiag.textContent='rider diag: waiting for load...';
 document.body.appendChild(riderDiag);
-function diagLine(s){riderDiag.textContent+='\n'+s}
+function diagLine(s){riderDiag.textContent+='\n'+s;riderDiag.scrollTop=riderDiag.scrollHeight}
 diagLine('THREE.GLTFLoader present: '+(typeof THREE.GLTFLoader));
 diagLine('THREE.SkeletonUtils present: '+(typeof THREE.SkeletonUtils));
 diagLine('Loading from: '+RIDER_GLB_URL);
